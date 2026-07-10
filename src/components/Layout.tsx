@@ -105,7 +105,9 @@ export default function Layout() {
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-violet-600 shadow-sm shadow-violet-500/20">
               <MessageSquare className="h-[18px] w-[18px] text-white" />
             </div>
-            <span className="text-[17px] font-semibold tracking-tight text-zinc-900">ZappFlow</span>
+            <span className="text-[17px] font-semibold tracking-tight text-zinc-900">
+              CRM Perícia Foco
+            </span>
           </div>
         </SidebarHeader>
         <SidebarContent className="px-3 pt-2">
