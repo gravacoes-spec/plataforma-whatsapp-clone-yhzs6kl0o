@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-13T19:34:39.012Z",
+  "generatedAt": "2026-07-13T20:09:49.699Z",
   "collections": [
     {
       "name": "users",
@@ -543,7 +543,11 @@
           ]
         }
       ],
-      "indexes": ["CREATE INDEX idx_leads_vend_resp ON Leads (vend_resp)"]
+      "indexes": [
+        "CREATE INDEX idx_leads_vend_resp ON Leads (vend_resp)",
+        "CREATE INDEX `idx_leads_email` ON `Leads` (email)",
+        "CREATE INDEX `idx_leads_phone` ON `Leads` (phone)"
+      ]
     },
     {
       "name": "Metas",
@@ -808,6 +812,345 @@
         }
       ],
       "indexes": ["CREATE INDEX idx_bd_mentor ON bd_clientes (Mentor_a)"]
+    },
+    {
+      "name": "webhook_log",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != '' && @request.auth.perfil_acess = 'Gestor'",
+        "view": "@request.auth.id != '' && @request.auth.perfil_acess = 'Gestor'",
+        "create": "",
+        "update": "@request.auth.id != '' && @request.auth.perfil_acess = 'Gestor'",
+        "delete": "@request.auth.id != '' && @request.auth.perfil_acess = 'Gestor'"
+      },
+      "fields": [
+        {
+          "name": "status",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "origem",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "payload_receb",
+          "type": "json",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "data_receb",
+          "type": "date",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": []
+    },
+    {
+      "name": "vendas_hotmart",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != '' && (@request.auth.perfil_acess = 'Gestor' || @request.auth.perfil_acess = 'Suporte' || @request.auth.perfil_acess = 'Vendedor')",
+        "view": "@request.auth.id != '' && (@request.auth.perfil_acess = 'Gestor' || @request.auth.perfil_acess = 'Suporte' || @request.auth.perfil_acess = 'Vendedor')",
+        "create": "",
+        "update": "@request.auth.id != '' && (@request.auth.perfil_acess = 'Gestor' || @request.auth.perfil_acess = 'Suporte')",
+        "delete": "@request.auth.id != '' && @request.auth.perfil_acess = 'Gestor'"
+      },
+      "fields": [
+        {
+          "name": "id_evento",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "tipo_evento",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "transacao",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "status_compra",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "data_pedido",
+          "type": "date",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "nome_produto",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "nome_comprador",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "email_comprador",
+          "type": "email",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "telefone_comprador",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "documento_comprador",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "cidade_comprador",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "estado_comprador",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "meio_pagamento",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "parcelas",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "preco_total",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "moeda",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "comissao_produtor",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "nome_afiliado",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "valor_frete",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "status_assinatura",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX idx_vh_email ON vendas_hotmart (email_comprador)",
+        "CREATE INDEX idx_vh_transacao ON vendas_hotmart (transacao)"
+      ]
+    },
+    {
+      "name": "bd_mentor",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != ''",
+        "view": "@request.auth.id != ''",
+        "create": "@request.auth.id != '' && (@request.auth.perfil_acess = 'Gestor' || @request.auth.perfil_acess = 'Suporte')",
+        "update": "@request.auth.id != '' && (@request.auth.perfil_acess = 'Gestor' || @request.auth.perfil_acess = 'Suporte')",
+        "delete": "@request.auth.id != '' && @request.auth.perfil_acess = 'Gestor'"
+      },
+      "fields": [
+        {
+          "name": "nome",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "email",
+          "type": "email",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "phone",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "aluno_vinculado",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "bd_clientes"
+        },
+        {
+          "name": "ativo",
+          "type": "bool",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": ["CREATE INDEX idx_bdm_email ON bd_mentor (email)"]
+    },
+    {
+      "name": "tasks",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != '' && (user_id = @request.auth.id || @request.auth.perfil_acess = 'Gestor' || @request.auth.perfil_acess = 'Suporte')",
+        "view": "@request.auth.id != '' && (user_id = @request.auth.id || @request.auth.perfil_acess = 'Gestor' || @request.auth.perfil_acess = 'Suporte')",
+        "create": "@request.auth.id != ''",
+        "update": "@request.auth.id != '' && (user_id = @request.auth.id || @request.auth.perfil_acess = 'Gestor' || @request.auth.perfil_acess = 'Suporte')",
+        "delete": "@request.auth.id != '' && (user_id = @request.auth.id || @request.auth.perfil_acess = 'Gestor' || @request.auth.perfil_acess = 'Suporte')"
+      },
+      "fields": [
+        {
+          "name": "description",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "due_date",
+          "type": "date",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "completed",
+          "type": "bool",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "user_id",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "lead_id",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "Leads"
+        },
+        {
+          "name": "client_id",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "bd_clientes"
+        },
+        {
+          "name": "mentor_id",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "bd_mentor"
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX idx_tasks_user ON tasks (user_id)",
+        "CREATE INDEX idx_tasks_due ON tasks (due_date)"
+      ]
     }
   ]
 }
