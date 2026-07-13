@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-13T14:39:14.543Z",
+  "generatedAt": "2026-07-13T19:34:39.012Z",
   "collections": [
     {
       "name": "users",
@@ -420,46 +420,10 @@
           "collectionRef": "users"
         },
         {
-          "name": "etapa_pipeline",
-          "type": "select",
-          "required": false,
-          "system": false,
-          "selectValues": [
-            "Novo",
-            "Contatado",
-            "Qualificado",
-            "Apresentacao",
-            "Negociacao",
-            "Ganho",
-            "Perdido"
-          ]
-        },
-        {
-          "name": "int_perito",
-          "type": "select",
-          "required": false,
-          "system": false,
-          "selectValues": ["Sim", "Nao", "Talvez"]
-        },
-        {
           "name": "area_grad",
           "type": "text",
           "required": false,
           "system": false
-        },
-        {
-          "name": "tmp_acad",
-          "type": "select",
-          "required": false,
-          "system": false,
-          "selectValues": ["Ensino Medio", "Graduacao", "Pos-Graduacao", "Doutorado"]
-        },
-        {
-          "name": "renda",
-          "type": "select",
-          "required": false,
-          "system": false,
-          "selectValues": ["Ate 2k", "2k-5k", "5k-10k", "10k+"]
         },
         {
           "name": "score_comerc",
@@ -534,6 +498,49 @@
           "required": false,
           "system": false,
           "autodateTriggers": ["onCreate", "onUpdate"]
+        },
+        {
+          "name": "int_perito",
+          "type": "select",
+          "required": false,
+          "system": false,
+          "selectValues": ["100% decidido", "Ainda avaliando"]
+        },
+        {
+          "name": "tmp_acad",
+          "type": "select",
+          "required": false,
+          "system": false,
+          "selectValues": [
+            "Formado ou últimos 3 anos",
+            "Primeiros anos da graduação",
+            "Sem graduação aderente"
+          ]
+        },
+        {
+          "name": "renda",
+          "type": "select",
+          "required": false,
+          "system": false,
+          "selectValues": ["Possui renda própria", "Sem renda própria"]
+        },
+        {
+          "name": "etapa_pipeline",
+          "type": "select",
+          "required": false,
+          "system": false,
+          "selectValues": [
+            "Triagem / Qualificação",
+            "3. Lead Premium",
+            "4. Lead Qualificado",
+            "5. Lead em Nutrição",
+            "Novo",
+            "Contatado",
+            "Apresentacao",
+            "Negociacao",
+            "Ganho",
+            "Perdido"
+          ]
         }
       ],
       "indexes": ["CREATE INDEX idx_leads_vend_resp ON Leads (vend_resp)"]
