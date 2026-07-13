@@ -25,7 +25,7 @@ export interface LeadRecord {
 }
 
 export const getLeads = async (): Promise<LeadRecord[]> => {
-  return await pb.collection('Leads').getFullList({ sort: '-created' })
+  return await pb.collection('Leads').getFullList({ sort: '-created', expand: 'vend_resp' })
 }
 
 export const getLead = async (id: string): Promise<LeadRecord> => {

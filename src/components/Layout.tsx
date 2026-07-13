@@ -1,5 +1,15 @@
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom'
-import { MessageSquare, Settings2, LogOut, Loader2, Bot, Kanban } from 'lucide-react'
+import {
+  MessageSquare,
+  Settings2,
+  LogOut,
+  Loader2,
+  Bot,
+  Kanban,
+  UsersRound,
+  CheckSquare,
+  Contact,
+} from 'lucide-react'
 import { useAuth } from '@/hooks/use-auth'
 import { useEffect, useState } from 'react'
 import { getInstances } from '@/services/whatsapp'
@@ -91,11 +101,21 @@ export default function Layout() {
   const isConnected = instance?.status === 'connected'
   const isConnecting = instance?.status === 'connecting' || instance?.status === 'pending'
 
-  const navItems = [
+  const whatsappNavItems = [
     { to: '/inbox', label: 'Caixa de Entrada', icon: MessageSquare },
-    { to: '/pipeline', label: 'Pipeline', icon: Kanban },
+    { to: '/pipeline', label: 'Pipeline WhatsApp', icon: Kanban },
     { to: '/agents', label: 'Agentes IA', icon: Bot },
   ]
+
+  const crmNavItems = [
+    { to: '/crm/leads', label: 'Leads', icon: Contact },
+    { to: '/crm/pipeline', label: 'Pipeline CRM', icon: Kanban },
+    { to: '/crm/tasks', label: 'Minhas Tarefas', icon: CheckSquare },
+  ]
+
+  if (user?.perfil_acess === 'Gestor' || user?.perfil_acess === 'Suporte') {
+    crmNavItems.push({ to: '/admin/users', label: 'Usuários', icon: UsersRound })
+  }
 
   return (
     <SidebarProvider>
@@ -111,11 +131,41 @@ export default function Layout() {
           </div>
         </SidebarHeader>
         <SidebarContent className="px-3 pt-2">
-          <div className="px-2 pb-2 text-[11px] font-semibold uppercase tracking-wider text-zinc-400">
-            Workspace
+          <div className="px-2 pb-2 pt-2 text-[11px] font-semibold uppercase tracking-wider text-zinc-400">
+            CRM & Vendas
           </div>
           <SidebarMenu className="gap-0.5">
-            {navItems.map(({ to, label, icon: Icon }) => {
+            {crmNavItems.map(({ to, label, icon: Icon }) => {
+              const active = location.pathname === to
+              return (
+                <SidebarMenuItem key={to}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={active}
+                    className={cn(
+                      'h-9 rounded-lg px-2.5 text-[13.5px] font-medium transition-colors',
+                      active
+                        ? 'bg-violet-50 text-violet-700 hover:bg-violet-50 hover:text-violet-700'
+                        : 'text-zinc-600 hover:bg-zinc-100/70 hover:text-zinc-900',
+                    )}
+                  >
+                    <Link to={to}>
+                      <Icon
+                        className={cn('h-4 w-4', active ? 'text-violet-600' : 'text-zinc-400')}
+                      />
+                      <span>{label}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )
+            })}
+          </SidebarMenu>
+
+          <div className="px-2 pb-2 pt-6 text-[11px] font-semibold uppercase tracking-wider text-zinc-400">
+            WhatsApp
+          </div>
+          <SidebarMenu className="gap-0.5">
+            {whatsappNavItems.map(({ to, label, icon: Icon }) => {
               const active = location.pathname === to
               return (
                 <SidebarMenuItem key={to}>
