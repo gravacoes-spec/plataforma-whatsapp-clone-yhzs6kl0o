@@ -51,10 +51,6 @@ export default function Users() {
     perfil_acess: 'Vendedor',
   })
 
-  if (user?.perfil_acess !== 'Gestor' && user?.perfil_acess !== 'Suporte') {
-    return <Navigate to="/" replace />
-  }
-
   const loadData = async () => {
     try {
       const data = await getUsers()
@@ -138,6 +134,10 @@ export default function Users() {
         toast.error('Erro ao excluir usuário')
       }
     }
+  }
+
+  if (user?.perfil_acess !== 'Gestor' && user?.perfil_acess !== 'Suporte') {
+    return <Navigate to="/" replace />
   }
 
   if (loading) {
