@@ -34,14 +34,38 @@ onRecordUpdate((e) => {
     }
   }
 
-  var etapa = record.getString('etapa_pipeline')
-  if (etapa === 'Triagem / Qualificação') {
+  var etapa = record.getString('etapa_pipeline') || '1. Novo Lead'
+
+  if (
+    tmpAcad === 'Sem graduação aderente' &&
+    record.original().getString('tmp_acad') !== 'Sem graduação aderente'
+  ) {
+    var existingNotes = record.getString('historico_notas') || ''
+    var flag = '[BAIXA PRIORIDADE] Perfil sem graduação aderente - sugerir produto low-ticket.'
+    if (existingNotes.indexOf(flag) === -1) {
+      record.set('historico_notas', flag + (existingNotes ? '\n' + existingNotes : ''))
+    }
+    record.set('etapa_pipeline', '5. Lead em Nutrição')
+
+    var tags = record.getString('tags') || ''
+    if (tags.indexOf('produto_low_ticket') === -1) {
+      record.set('tags', tags ? tags + ', produto_low_ticket' : 'produto_low_ticket')
+    }
+  } else if (
+    (etapa === 'Triagem / Qualificação' || etapa === '1. Novo Lead') &&
+    (score !== record.original().getInt('score_comerc') ||
+      tmpAcad !== record.original().getString('tmp_acad') ||
+      intPerito !== record.original().getString('int_perito') ||
+      renda !== record.original().getString('renda'))
+  ) {
     if (score >= 80) {
       record.set('etapa_pipeline', '3. Lead Premium')
     } else if (score >= 60) {
       record.set('etapa_pipeline', '4. Lead Qualificado')
     } else if (score >= 40) {
       record.set('etapa_pipeline', '5. Lead em Nutrição')
+    } else {
+      record.set('etapa_pipeline', '1. Novo Lead')
     }
   }
 

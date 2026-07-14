@@ -2,28 +2,58 @@ import { useEffect, useState } from 'react'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { getLeads, updateLead, LeadRecord } from '@/services/leads'
 import { useRealtime } from '@/hooks/use-realtime'
-import { Loader2 } from 'lucide-react'
+import { Loader2, Phone, Mail } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/hooks/use-auth'
 import { PageHeader } from '@/components/ui/page-header'
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog'
+import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Button } from '@/components/ui/button'
 
 const COLUMNS = [
-  { id: 'Novo', title: 'Novo Lead' },
-  { id: 'Contatado', title: 'Abordagem' },
+  { id: '1. Novo Lead', title: 'Novo Lead' },
+  { id: '2. Abordagem', title: 'Abordagem' },
   { id: '3. Lead Premium', title: 'Lead Premium' },
   { id: '4. Lead Qualificado', title: 'Lead Qualificado' },
   { id: '5. Lead em Nutrição', title: 'Lead em Nutrição' },
-  { id: 'Apresentacao', title: 'Agendamento de Consultoria' },
-  { id: 'Negociacao', title: 'Negociação' },
-  { id: 'Ganho', title: 'Venda Realizada' },
-  { id: 'Triagem / Qualificação', title: 'Follow-up' },
-  { id: 'Perdido', title: 'Lead Desqualificado/Perda' },
+  { id: '6. Agendamento de Consultoria', title: 'Agendamento de Consultoria' },
+  { id: '7. Negociação', title: 'Negociação' },
+  { id: '8. Venda Realizada', title: 'Venda Realizada' },
+  { id: '9. Follow-up', title: 'Follow-up' },
+  { id: '10. Lead Desqualificado/Perda', title: 'Lead Desqualificado/Perda' },
+]
+
+const LOSS_REASONS = [
+  'Orçamento insuficiente',
+  'O produto não se encaixa à necessidade',
+  'Não satisfeito com as condições de pagamento',
+  'Comprado do concorrente',
+  'Lead desqualificado (não quer se dedicar/não tem graduação específica)',
+  'Lead não retornou o(s) contato(s)',
 ]
 
 export default function CrmPipeline() {
   const { user } = useAuth()
   const [leads, setLeads] = useState<LeadRecord[]>([])
   const [loading, setLoading] = useState(true)
+  const [selectedLead, setSelectedLead] = useState<LeadRecord | null>(null)
+  const [lossModalOpen, setLossModalOpen] = useState(false)
+  const [pendingDrop, setPendingDrop] = useState<{ leadId: string; columnId: string } | null>(null)
+  const [lossReason, setLossReason] = useState('')
 
   const loadData = async () => {
     try {
@@ -58,18 +88,43 @@ export default function CrmPipeline() {
     e.preventDefault()
   }
 
+  const applyStageChange = async (leadId: string, columnId: string, motivo_perda?: string) => {
+    setLeads((prev) =>
+      prev.map((l) =>
+        l.id === leadId
+          ? { ...l, etapa_pipeline: columnId, motivo_perda: motivo_perda || l.motivo_perda }
+          : l,
+      ),
+    )
+    try {
+      await updateLead(leadId, { etapa_pipeline: columnId, motivo_perda })
+    } catch (err) {
+      console.error(err)
+      loadData()
+    }
+  }
+
   const handleDrop = async (e: React.DragEvent, columnId: string) => {
     e.preventDefault()
     const leadId = e.dataTransfer.getData('leadId')
     if (!leadId) return
 
-    setLeads((prev) => prev.map((l) => (l.id === leadId ? { ...l, etapa_pipeline: columnId } : l)))
+    if (columnId === '10. Lead Desqualificado/Perda') {
+      setPendingDrop({ leadId, columnId })
+      setLossModalOpen(true)
+      return
+    }
 
-    try {
-      await updateLead(leadId, { etapa_pipeline: columnId })
-    } catch (err) {
-      console.error(err)
-      loadData() // revert
+    applyStageChange(leadId, columnId)
+  }
+
+  const confirmLoss = () => {
+    if (!lossReason) return
+    if (pendingDrop) {
+      applyStageChange(pendingDrop.leadId, pendingDrop.columnId, lossReason)
+      setPendingDrop(null)
+      setLossModalOpen(false)
+      setLossReason('')
     }
   }
 
@@ -83,7 +138,7 @@ export default function CrmPipeline() {
       <div className="flex-1 overflow-x-auto px-8 pb-8">
         <div className="flex h-full min-w-max gap-4 items-start pt-2">
           {COLUMNS.map((col) => {
-            const colLeads = leads.filter((l) => (l.etapa_pipeline || 'Novo') === col.id)
+            const colLeads = leads.filter((l) => (l.etapa_pipeline || '1. Novo Lead') === col.id)
 
             return (
               <div
@@ -106,6 +161,7 @@ export default function CrmPipeline() {
                         key={lead.id}
                         draggable
                         onDragStart={(e) => handleDragStart(e, lead.id)}
+                        onClick={() => setSelectedLead(lead)}
                         className="group flex flex-col p-3.5 bg-white rounded-lg shadow-sm border border-zinc-200 hover:border-violet-300 hover:shadow-md transition-all cursor-grab active:cursor-grabbing"
                       >
                         <div className="flex justify-between items-start mb-2 gap-2">
@@ -145,6 +201,192 @@ export default function CrmPipeline() {
           })}
         </div>
       </div>
+
+      <Sheet open={!!selectedLead} onOpenChange={(o) => !o && setSelectedLead(null)}>
+        <SheetContent className="sm:max-w-md overflow-y-auto bg-white p-0">
+          {selectedLead && (
+            <div className="flex flex-col h-full">
+              <SheetHeader className="p-6 border-b border-zinc-100 pb-5">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 font-bold text-lg">
+                    {selectedLead.name?.charAt(0)?.toUpperCase() || 'L'}
+                  </div>
+                  <SheetTitle className="text-xl leading-tight">{selectedLead.name}</SheetTitle>
+                </div>
+                <div className="flex flex-col gap-1.5 mt-4 text-sm text-zinc-600">
+                  <div className="flex items-center gap-2">
+                    <Phone className="h-4 w-4 shrink-0" /> {selectedLead.phone || '-'}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Mail className="h-4 w-4 shrink-0" /> {selectedLead.email || '-'}
+                  </div>
+                </div>
+              </SheetHeader>
+              <div className="p-6 flex-1 space-y-7">
+                <div className="space-y-3">
+                  <h4 className="text-[11px] font-bold tracking-wider text-zinc-400 uppercase">
+                    Comercial
+                  </h4>
+                  <div className="space-y-2.5">
+                    <div className="flex justify-between text-[13px]">
+                      <span className="text-zinc-500">Etapa do Pipeline:</span>
+                      <span className="font-medium text-zinc-900 text-right">
+                        {selectedLead.etapa_pipeline || '-'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-[13px]">
+                      <span className="text-zinc-500">Interesse em atuar como perito:</span>
+                      <span className="font-medium text-zinc-900 text-right">
+                        {selectedLead.int_perito || '-'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-[13px]">
+                      <span className="text-zinc-500">Score Comercial:</span>
+                      <span className="font-medium text-zinc-900 text-right">
+                        {selectedLead.score_comerc || 0}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-[13px]">
+                      <span className="text-zinc-500">Capacidade financeira:</span>
+                      <span className="font-medium text-zinc-900 text-right">
+                        {selectedLead.renda || '-'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <h4 className="text-[11px] font-bold tracking-wider text-zinc-400 uppercase">
+                    Acadêmico
+                  </h4>
+                  <div className="space-y-2.5">
+                    <div className="flex justify-between text-[13px]">
+                      <span className="text-zinc-500">Área de Graduação:</span>
+                      <span className="font-medium text-zinc-900 text-right">
+                        {selectedLead.area_grad || '-'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-[13px]">
+                      <span className="text-zinc-500">Período acadêmico:</span>
+                      <span className="font-medium text-zinc-900 text-right">
+                        {selectedLead.tmp_acad || '-'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-[13px]">
+                      <span className="text-zinc-500">Concurso Alvo:</span>
+                      <span className="font-medium text-zinc-900 text-right">
+                        {selectedLead.concurso_alvo || '-'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-[13px]">
+                      <span className="text-zinc-500">Investimento em Prep.:</span>
+                      <span className="font-medium text-zinc-900 text-right">
+                        {selectedLead.inv_prep || '-'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <h4 className="text-[11px] font-bold tracking-wider text-zinc-400 uppercase">
+                    Estudos
+                  </h4>
+                  <div className="space-y-2.5">
+                    <div className="flex justify-between text-[13px]">
+                      <span className="text-zinc-500">Tempo de Estudos:</span>
+                      <span className="font-medium text-zinc-900 text-right">
+                        {selectedLead.tmp_estudos || '-'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-[13px]">
+                      <span className="text-zinc-500">Horas de Estudo/Dia:</span>
+                      <span className="font-medium text-zinc-900 text-right">
+                        {selectedLead.hrs_est_dia || '-'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-[13px] gap-4">
+                      <span className="text-zinc-500 shrink-0">Maior Dificuldade:</span>
+                      <span className="font-medium text-zinc-900 text-right max-w-[220px]">
+                        {selectedLead.maior_dif || '-'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-[13px] gap-4">
+                      <span className="text-zinc-500 shrink-0">Objetivo Principal:</span>
+                      <span className="font-medium text-zinc-900 text-right max-w-[220px]">
+                        {selectedLead.top_obj || '-'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {selectedLead.motivo_perda && (
+                  <div className="space-y-3">
+                    <h4 className="text-[11px] font-bold tracking-wider text-red-500 uppercase">
+                      Motivo da Perda
+                    </h4>
+                    <div className="text-[13px] font-medium text-red-600 bg-red-50 p-3 rounded-lg border border-red-100">
+                      {selectedLead.motivo_perda}
+                    </div>
+                  </div>
+                )}
+
+                {selectedLead.tags && (
+                  <div className="space-y-3">
+                    <h4 className="text-[11px] font-bold tracking-wider text-zinc-400 uppercase">
+                      Tags
+                    </h4>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedLead.tags.split(',').map((tag) => (
+                        <span
+                          key={tag}
+                          className="text-[12px] font-medium text-zinc-700 bg-zinc-100 border border-zinc-200 px-2.5 py-1 rounded-md"
+                        >
+                          {tag.trim()}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
+
+      <Dialog open={lossModalOpen} onOpenChange={setLossModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Motivo da Perda</DialogTitle>
+          </DialogHeader>
+          <div className="py-4 space-y-4">
+            <Label>Selecione o motivo para desqualificar este lead</Label>
+            <Select value={lossReason} onValueChange={setLossReason}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione um motivo..." />
+              </SelectTrigger>
+              <SelectContent>
+                {LOSS_REASONS.map((r) => (
+                  <SelectItem key={r} value={r}>
+                    {r}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setLossModalOpen(false)}>
+              Cancelar
+            </Button>
+            <Button
+              disabled={!lossReason}
+              onClick={confirmLoss}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              Confirmar Perda
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

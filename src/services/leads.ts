@@ -21,6 +21,8 @@ export interface LeadRecord {
   top_obj: string
   inv_prep: string
   dias_ment: string[]
+  tags: string
+  mentoria: boolean
   created: string
   updated: string
 }

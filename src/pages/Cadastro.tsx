@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useState } from 'react'
 import { Check } from 'lucide-react'
+import logoUrl from '@/assets/logoescritopericiafoco-42506.png'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -74,7 +75,7 @@ export default function Cadastro() {
     try {
       await pb.collection('Leads').create({
         ...values,
-        etapa_pipeline: 'Triagem / Qualificação',
+        etapa_pipeline: '1. Novo Lead',
       })
       setIsSuccess(true)
       toast.success('Formulário enviado com sucesso!')
@@ -112,20 +113,8 @@ export default function Cadastro() {
       <div className="w-full max-w-3xl">
         {/* Header & Branding */}
         <div className="text-center mb-10 space-y-6">
-          <div className="bg-[#18181b] rounded-full p-4 mx-auto w-32 h-32 flex items-center justify-center border border-[#27272a] shadow-xl">
-            <img
-              src="/Logo_escrito_Pericia_Foco.png"
-              alt="Perícia Foco"
-              className="w-full h-full object-contain"
-              onError={(e) => {
-                // Fallback text if logo is not found
-                ;(e.target as HTMLImageElement).style.display = 'none'
-                const span = document.createElement('span')
-                span.innerText = 'PF'
-                span.className = 'text-3xl font-bold text-white tracking-tight'
-                ;(e.target as HTMLImageElement).parentNode?.appendChild(span)
-              }}
-            />
+          <div className="mx-auto flex items-center justify-center overflow-hidden mb-6">
+            <img src={logoUrl} alt="Perícia Foco" className="h-28 object-contain" />
           </div>
           <h1 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
             Consultoria de Preparação Pericial
@@ -374,8 +363,8 @@ export default function Cadastro() {
                             <SelectItem value="Não consigo evoluir nas questões/simulados">
                               Não consigo evoluir nas questões/simulados
                             </SelectItem>
-                            <SelectItem value="Não tenho um plano claro para aprovação">
-                              Não tenho um plano claro para aprovação
+                            <SelectItem value="Não tenho um plano claro para abravação">
+                              Não tenho um plano claro para abravação
                             </SelectItem>
                             <SelectItem value="Outros motivos">Outros motivos</SelectItem>
                           </SelectContent>

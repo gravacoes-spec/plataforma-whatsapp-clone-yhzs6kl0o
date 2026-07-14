@@ -33,16 +33,25 @@ import {
 import { toast } from 'sonner'
 
 const PIPELINE_STAGES = [
-  'Triagem / Qualificação',
+  '1. Novo Lead',
+  '2. Abordagem',
   '3. Lead Premium',
   '4. Lead Qualificado',
   '5. Lead em Nutrição',
-  'Novo',
-  'Contatado',
-  'Apresentacao',
-  'Negociacao',
-  'Ganho',
-  'Perdido',
+  '6. Agendamento de Consultoria',
+  '7. Negociação',
+  '8. Venda Realizada',
+  '9. Follow-up',
+  '10. Lead Desqualificado/Perda',
+]
+
+const LOSS_REASONS = [
+  'Orçamento insuficiente',
+  'O produto não se encaixa à necessidade',
+  'Não satisfeito com as condições de pagamento',
+  'Comprado do concorrente',
+  'Lead desqualificado (não quer se dedicar/não tem graduação específica)',
+  'Lead não retornou o(s) contato(s)',
 ]
 
 export default function Leads() {
@@ -59,9 +68,7 @@ export default function Leads() {
     try {
       const [data, usersData] = await Promise.all([getLeads(), getUsers()])
       setLeads(data)
-      setUsers(
-        usersData.filter((u) => u.perfil_acess === 'Vendedor' || u.perfil_acess === 'Gestor'),
-      )
+      setUsers(usersData.filter((u) => u.perfil_acess === 'Vendedor'))
     } catch (e) {
       console.error(e)
     } finally {
@@ -93,7 +100,7 @@ export default function Leads() {
         email: '',
         phone: '',
         vend_resp: '',
-        etapa_pipeline: 'Novo',
+        etapa_pipeline: '1. Novo Lead',
         int_perito: 'Ainda avaliando',
         area_grad: '',
         tmp_acad: 'Formado ou últimos 3 anos',
@@ -114,6 +121,13 @@ export default function Leads() {
 
   const handleSave = async () => {
     if (!editingLead) return
+    if (
+      editingLead.etapa_pipeline === '10. Lead Desqualificado/Perda' &&
+      !editingLead.motivo_perda
+    ) {
+      toast.error('O motivo da perda é obrigatório ao desqualificar o lead.')
+      return
+    }
     try {
       if (editingLead.id) {
         await updateLead(editingLead.id, editingLead)
@@ -198,7 +212,7 @@ export default function Leads() {
                   </TableCell>
                   <TableCell>
                     <span className="inline-flex items-center rounded-md bg-violet-50 px-2 py-1 text-[11px] font-medium text-violet-700 ring-1 ring-inset ring-violet-600/20">
-                      {l.etapa_pipeline || 'Novo'}
+                      {l.etapa_pipeline || '1. Novo Lead'}
                     </span>
                   </TableCell>
                   <TableCell className="text-zinc-500">
@@ -306,7 +320,7 @@ export default function Leads() {
                   <div className="space-y-2">
                     <Label>Etapa Pipeline</Label>
                     <Select
-                      value={editingLead.etapa_pipeline || 'Novo'}
+                      value={editingLead.etapa_pipeline || '1. Novo Lead'}
                       onValueChange={(v) => setEditingLead({ ...editingLead, etapa_pipeline: v })}
                     >
                       <SelectTrigger>
@@ -356,11 +370,11 @@ export default function Leads() {
                         <SelectValue placeholder="Selecione..." />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Preco">Preço</SelectItem>
-                        <SelectItem value="Concorrencia">Concorrência</SelectItem>
-                        <SelectItem value="Desistiu">Desistiu</SelectItem>
-                        <SelectItem value="Sem Fit">Sem Fit</SelectItem>
-                        <SelectItem value="Outro">Outro</SelectItem>
+                        {LOSS_REASONS.map((r) => (
+                          <SelectItem key={r} value={r}>
+                            {r}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
