@@ -20,6 +20,7 @@ export interface LeadRecord {
   maior_dif: string
   top_obj: string
   inv_prep: string
+  dias_ment: string[]
   created: string
   updated: string
 }

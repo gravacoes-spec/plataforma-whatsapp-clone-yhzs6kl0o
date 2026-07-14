@@ -106,6 +106,7 @@ export default function Leads() {
         maior_dif: 'Tempo',
         top_obj: 'Aprovacao',
         inv_prep: 'Medio',
+        dias_ment: [],
       },
     )
     setIsModalOpen(true)
@@ -452,11 +453,28 @@ export default function Leads() {
                         <SelectValue placeholder="Selecione..." />
                       </SelectTrigger>
                       <SelectContent>
+                        <SelectItem value="Não sei por onde começar">
+                          Não sei por onde começar
+                        </SelectItem>
+                        <SelectItem value="Falta de organização">Falta de organização</SelectItem>
+                        <SelectItem value="Falta de constância (disciplina)">
+                          Falta de constância (disciplina)
+                        </SelectItem>
+                        <SelectItem value="Não sei estudar a parte técnica (materiais e legislação)">
+                          Não sei estudar a parte técnica (materiais e legislação)
+                        </SelectItem>
+                        <SelectItem value="Não consigo evoluir nas questões/simulados">
+                          Não consigo evoluir nas questões/simulados
+                        </SelectItem>
+                        <SelectItem value="Não tenho um plano claro para aprovação">
+                          Não tenho um plano claro para aprovação
+                        </SelectItem>
+                        <SelectItem value="Outros motivos">Outros motivos</SelectItem>
                         <SelectItem value="Tempo">Tempo</SelectItem>
                         <SelectItem value="Disciplina">Disciplina</SelectItem>
                         <SelectItem value="Metodo">Método</SelectItem>
                         <SelectItem value="Recursos">Recursos</SelectItem>
-                        <SelectItem value="Outro">Outro</SelectItem>
+                        <SelectItem value="Outro">Outro</SelectItem>{' '}
                       </SelectContent>
                     </Select>
                   </div>

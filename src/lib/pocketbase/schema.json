@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-14T13:55:16.712Z",
+  "generatedAt": "2026-07-14T15:45:40.388Z",
   "collections": [
     {
       "name": "users",
@@ -389,7 +389,7 @@
       "apiRules": {
         "list": "@request.auth.id != '' && (@request.auth.perfil_acess = 'Gestor' || @request.auth.perfil_acess = 'Suporte' || (@request.auth.perfil_acess = 'Vendedor' && vend_resp = @request.auth.id))",
         "view": "@request.auth.id != '' && (@request.auth.perfil_acess = 'Gestor' || @request.auth.perfil_acess = 'Suporte' || (@request.auth.perfil_acess = 'Vendedor' && vend_resp = @request.auth.id))",
-        "create": "@request.auth.id != '' && (@request.auth.perfil_acess = 'Gestor' || @request.auth.perfil_acess = 'Suporte' || @request.auth.perfil_acess = 'Vendedor')",
+        "create": "",
         "update": "@request.auth.id != '' && (@request.auth.perfil_acess = 'Gestor' || @request.auth.perfil_acess = 'Suporte' || (@request.auth.perfil_acess = 'Vendedor' && vend_resp = @request.auth.id))",
         "delete": "@request.auth.id != '' && (@request.auth.perfil_acess = 'Gestor' || @request.auth.perfil_acess = 'Suporte')"
       },
@@ -458,20 +458,6 @@
           "selectValues": ["1-2h", "3-4h", "5-6h", "7h+"]
         },
         {
-          "name": "maior_dif",
-          "type": "select",
-          "required": false,
-          "system": false,
-          "selectValues": ["Tempo", "Disciplina", "Metodo", "Recursos", "Outro"]
-        },
-        {
-          "name": "top_obj",
-          "type": "select",
-          "required": false,
-          "system": false,
-          "selectValues": ["Aprovacao", "Estabilidade", "Realizacao Pessoal", "Outro"]
-        },
-        {
           "name": "inv_prep",
           "type": "select",
           "required": false,
@@ -518,6 +504,20 @@
           "selectValues": ["Possui renda própria", "Sem renda própria"]
         },
         {
+          "name": "vend_resp",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "dias_ment",
+          "type": "select",
+          "required": false,
+          "system": false,
+          "selectValues": ["SEG", "TER", "QUA", "QUI", "SEXT", "SÁB"]
+        },
+        {
           "name": "etapa_pipeline",
           "type": "select",
           "required": false,
@@ -532,15 +532,52 @@
             "Apresentacao",
             "Negociacao",
             "Ganho",
-            "Perdido"
+            "Perdido",
+            "1. Novo Lead",
+            "2. Abordagem",
+            "6. Agendamento de Consultoria",
+            "7. Negociação",
+            "8. Venda Realizada",
+            "9. Follow-up",
+            "10. Lead Desqualificado/Perda"
           ]
         },
         {
-          "name": "vend_resp",
-          "type": "relation",
+          "name": "maior_dif",
+          "type": "select",
           "required": false,
           "system": false,
-          "collectionRef": "users"
+          "selectValues": [
+            "Tempo",
+            "Disciplina",
+            "Metodo",
+            "Recursos",
+            "Outro",
+            "Não sei por onde começar",
+            "Falta de organização",
+            "Falta de constância (disciplina)",
+            "Não sei estudar a parte técnica (materiais e legislação)",
+            "Não consigo evoluir nas questões/simulados",
+            "Não tenho um plano claro para aprovação",
+            "Outros motivos"
+          ]
+        },
+        {
+          "name": "top_obj",
+          "type": "select",
+          "required": false,
+          "system": false,
+          "selectValues": [
+            "Aprovacao",
+            "Estabilidade",
+            "Realizacao Pessoal",
+            "Outro",
+            "Ser aprovado no concurso de Perito",
+            "Melhorar drasticamente meu método de estudos",
+            "Evoluir significativamente nos simulados (melhorar % de acertos)",
+            "Melhorar minha organização e ter mais controle sobre o ciclo de estudos",
+            "Entender se estou no caminho certo e ter clareza"
+          ]
         }
       ],
       "indexes": [
