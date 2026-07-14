@@ -30,7 +30,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { toast } from 'sonner'
-import { extractFieldErrors } from '@/lib/pocketbase/errors'
+import { extractFieldErrors, getErrorMessage } from '@/lib/pocketbase/errors'
 import { Navigate } from 'react-router-dom'
 
 export default function Users() {
@@ -129,9 +129,15 @@ export default function Users() {
     if (confirm('Tem certeza que deseja excluir este usuário?')) {
       try {
         await deleteUser(id)
-        toast.success('Usuário excluído')
-      } catch (e) {
-        toast.error('Erro ao excluir usuário')
+        toast.success('Usuário excluído com sucesso')
+      } catch (e: any) {
+        if (e?.status === 400) {
+          toast.error(
+            'Não é possível excluir este usuário pois existem registros vinculados a ele (Leads, Tarefas, instâncias do WhatsApp, etc.). Remova ou reatribua os registros vinculados antes de tentar novamente.',
+          )
+        } else {
+          toast.error(getErrorMessage(e))
+        }
       }
     }
   }

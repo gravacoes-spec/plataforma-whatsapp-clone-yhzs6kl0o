@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-13T20:41:34.379Z",
+  "generatedAt": "2026-07-14T13:55:16.712Z",
   "collections": [
     {
       "name": "users",
@@ -63,13 +63,6 @@
       },
       "fields": [
         {
-          "name": "user_id",
-          "type": "relation",
-          "required": true,
-          "system": false,
-          "collectionRef": "users"
-        },
-        {
           "name": "instance_name",
           "type": "text",
           "required": true,
@@ -101,6 +94,13 @@
           "required": false,
           "system": false,
           "autodateTriggers": ["onCreate", "onUpdate"]
+        },
+        {
+          "name": "user_id",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "users"
         }
       ],
       "indexes": ["CREATE UNIQUE INDEX idx_wi_name ON whatsapp_instances (instance_name)"]
@@ -116,13 +116,6 @@
         "delete": "@request.auth.id != '' && user_id = @request.auth.id"
       },
       "fields": [
-        {
-          "name": "user_id",
-          "type": "relation",
-          "required": true,
-          "system": false,
-          "collectionRef": "users"
-        },
         {
           "name": "instance_id",
           "type": "relation",
@@ -186,6 +179,13 @@
           "required": false,
           "system": false,
           "selectValues": ["in_conversation", "waiting", "resolved", "lost"]
+        },
+        {
+          "name": "user_id",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "users"
         }
       ],
       "indexes": [
@@ -204,13 +204,6 @@
         "delete": "@request.auth.id != '' && user_id = @request.auth.id"
       },
       "fields": [
-        {
-          "name": "user_id",
-          "type": "relation",
-          "required": true,
-          "system": false,
-          "collectionRef": "users"
-        },
         {
           "name": "instance_id",
           "type": "relation",
@@ -300,6 +293,13 @@
           "type": "text",
           "required": false,
           "system": false
+        },
+        {
+          "name": "user_id",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "users"
         }
       ],
       "indexes": ["CREATE UNIQUE INDEX idx_wm_id ON whatsapp_messages (message_id)"]
@@ -315,13 +315,6 @@
         "delete": "@request.auth.id != '' && user_id = @request.auth.id"
       },
       "fields": [
-        {
-          "name": "user_id",
-          "type": "relation",
-          "required": true,
-          "system": false,
-          "collectionRef": "users"
-        },
         {
           "name": "instance_id",
           "type": "relation",
@@ -379,6 +372,13 @@
           "type": "text",
           "required": true,
           "system": false
+        },
+        {
+          "name": "user_id",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "users"
         }
       ],
       "indexes": []
@@ -411,13 +411,6 @@
           "type": "text",
           "required": false,
           "system": false
-        },
-        {
-          "name": "vend_resp",
-          "type": "relation",
-          "required": false,
-          "system": false,
-          "collectionRef": "users"
         },
         {
           "name": "area_grad",
@@ -541,6 +534,13 @@
             "Ganho",
             "Perdido"
           ]
+        },
+        {
+          "name": "vend_resp",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "users"
         }
       ],
       "indexes": [
@@ -674,13 +674,6 @@
           "system": false
         },
         {
-          "name": "Mentor_a",
-          "type": "relation",
-          "required": false,
-          "system": false,
-          "collectionRef": "users"
-        },
-        {
           "name": "Telefone",
           "type": "text",
           "required": false,
@@ -716,13 +709,6 @@
           "required": false,
           "system": false,
           "collectionRef": "Leads"
-        },
-        {
-          "name": "Vend_Resp_User",
-          "type": "relation",
-          "required": false,
-          "system": false,
-          "collectionRef": "users"
         },
         {
           "name": "Nome_Prod",
@@ -809,6 +795,20 @@
           "required": false,
           "system": false,
           "autodateTriggers": ["onCreate", "onUpdate"]
+        },
+        {
+          "name": "Mentor_a",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "Vend_Resp_User",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "users"
         }
       ],
       "indexes": ["CREATE INDEX idx_bd_mentor ON bd_clientes (Mentor_a)"]
@@ -1105,13 +1105,6 @@
           "system": false
         },
         {
-          "name": "user_id",
-          "type": "relation",
-          "required": false,
-          "system": false,
-          "collectionRef": "users"
-        },
-        {
           "name": "lead_id",
           "type": "relation",
           "required": false,
@@ -1145,6 +1138,13 @@
           "required": false,
           "system": false,
           "autodateTriggers": ["onCreate", "onUpdate"]
+        },
+        {
+          "name": "user_id",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "users"
         }
       ],
       "indexes": [
