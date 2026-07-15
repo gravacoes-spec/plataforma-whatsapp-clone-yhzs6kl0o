@@ -1,4 +1,4 @@
-routerAdd('POST', '/backend/v1/webhook-hotmart', (e) => {
+routerAdd('POST', '/api/webhook/hotmart', (e) => {
   const body = e.requestInfo().body || {}
 
   const hottok =
