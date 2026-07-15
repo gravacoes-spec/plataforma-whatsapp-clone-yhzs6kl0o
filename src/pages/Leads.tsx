@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
 import { getLeads, updateLead, createLead, deleteLead, LeadRecord } from '@/services/leads'
 import { getUsers } from '@/services/users'
+import { getVendasByLead } from '@/services/hotmart'
 import { useRealtime } from '@/hooks/use-realtime'
-import { Plus, Search, Loader2, Pencil, Trash2, SlidersHorizontal } from 'lucide-react'
+import { Plus, Search, Loader2, Pencil, Trash2, SlidersHorizontal, ShoppingBag } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { PageHeader } from '@/components/ui/page-header'
@@ -31,6 +32,9 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { toast } from 'sonner'
+import { format, parseISO } from 'date-fns'
+import { ptBR } from 'date-fns/locale'
+import { Switch } from '@/components/ui/switch'
 
 const PIPELINE_STAGES = [
   '1. Novo Lead',
@@ -63,6 +67,7 @@ export default function Leads() {
 
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingLead, setEditingLead] = useState<Partial<LeadRecord> | null>(null)
+  const [leadVendas, setLeadVendas] = useState<any[]>([])
 
   const loadData = async () => {
     try {
@@ -93,6 +98,16 @@ export default function Leads() {
     )
   }, [search, leads])
 
+  useEffect(() => {
+    if (editingLead?.id) {
+      getVendasByLead(editingLead.id)
+        .then(setLeadVendas)
+        .catch(() => setLeadVendas([]))
+    } else {
+      setLeadVendas([])
+    }
+  }, [editingLead?.id])
+
   const handleOpenModal = (lead: Partial<LeadRecord> | null = null) => {
     setEditingLead(
       lead || {
@@ -114,6 +129,7 @@ export default function Leads() {
         top_obj: 'Aprovacao',
         inv_prep: 'Medio',
         dias_ment: [],
+        mentoria: false,
       },
     )
     setIsModalOpen(true)
@@ -258,18 +274,19 @@ export default function Leads() {
       </div>
 
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="sm:max-w-[600px] p-0 overflow-hidden">
+        <DialogContent className="sm:max-w-[700px] p-0 overflow-hidden">
           <DialogHeader className="p-6 pb-4 border-b">
             <DialogTitle>{editingLead?.id ? 'Editar Lead' : 'Novo Lead'}</DialogTitle>
           </DialogHeader>
           {editingLead && (
             <Tabs defaultValue="basico" className="w-full">
               <div className="px-6 pt-2">
-                <TabsList className="w-full grid grid-cols-4">
+                <TabsList className="w-full grid grid-cols-5">
                   <TabsTrigger value="basico">Básico</TabsTrigger>
                   <TabsTrigger value="comercial">Comercial</TabsTrigger>
                   <TabsTrigger value="academico">Acadêmico</TabsTrigger>
                   <TabsTrigger value="estudos">Estudos</TabsTrigger>
+                  <TabsTrigger value="conversao">Conversão</TabsTrigger>
                 </TabsList>
               </div>
 
@@ -507,6 +524,81 @@ export default function Leads() {
                         <SelectItem value="Alto">Alto</SelectItem>
                       </SelectContent>
                     </Select>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="conversao" className="space-y-6 mt-0">
+                  <div className="flex items-center justify-between border-b pb-4">
+                    <div className="space-y-0.5">
+                      <Label className="text-base font-semibold text-zinc-900">
+                        Mentoria Ativa
+                      </Label>
+                      <p className="text-[13px] text-zinc-500">
+                        Este lead está recebendo mentoria atualmente?
+                      </p>
+                    </div>
+                    <Switch
+                      checked={!!editingLead.mentoria}
+                      onCheckedChange={(checked) =>
+                        setEditingLead({ ...editingLead, mentoria: checked })
+                      }
+                    />
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2 text-zinc-900">
+                      <ShoppingBag className="h-5 w-5 text-violet-600" />
+                      <h3 className="font-semibold">Histórico de Compras (Hotmart)</h3>
+                    </div>
+
+                    {leadVendas.length > 0 ? (
+                      <div className="rounded-xl border border-zinc-200/60 bg-white overflow-hidden shadow-sm">
+                        <Table>
+                          <TableHeader className="bg-zinc-50/50">
+                            <TableRow>
+                              <TableHead>Produto</TableHead>
+                              <TableHead>Status</TableHead>
+                              <TableHead>Data</TableHead>
+                              <TableHead className="text-right">Valor</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {leadVendas.map((v) => (
+                              <TableRow key={v.id}>
+                                <TableCell className="font-medium text-zinc-800">
+                                  {v.nome_produto || '-'}
+                                </TableCell>
+                                <TableCell>
+                                  <span className="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-[11px] font-medium text-blue-700 ring-1 ring-inset ring-blue-600/20">
+                                    {v.status_compra || '-'}
+                                  </span>
+                                </TableCell>
+                                <TableCell className="text-zinc-500">
+                                  {v.data_pedido
+                                    ? format(parseISO(v.data_pedido), 'dd/MM/yyyy', {
+                                        locale: ptBR,
+                                      })
+                                    : '-'}
+                                </TableCell>
+                                <TableCell className="text-right font-medium text-zinc-900">
+                                  {v.moeda} {v.preco_total?.toFixed(2)}
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    ) : (
+                      <div className="rounded-xl border border-dashed border-zinc-200 bg-zinc-50/50 p-8 text-center flex flex-col items-center justify-center">
+                        <ShoppingBag className="h-8 w-8 text-zinc-300 mb-2" />
+                        <p className="text-sm font-medium text-zinc-600">
+                          Nenhuma compra encontrada
+                        </p>
+                        <p className="text-[13px] text-zinc-500 mt-1">
+                          Este lead ainda não realizou compras na Hotmart.
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </TabsContent>
               </div>

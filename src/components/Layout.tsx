@@ -9,6 +9,7 @@ import {
   UsersRound,
   CheckSquare,
   Contact,
+  ShoppingBag,
 } from 'lucide-react'
 import { useAuth } from '@/hooks/use-auth'
 import { useEffect, useState } from 'react'
@@ -159,6 +160,34 @@ export default function Layout() {
                 </SidebarMenuItem>
               )
             })}
+          </SidebarMenu>
+
+          <div className="px-2 pb-2 pt-6 text-[11px] font-semibold uppercase tracking-wider text-zinc-400">
+            Hotmart
+          </div>
+          <SidebarMenu className="gap-0.5">
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                asChild
+                isActive={location.pathname === '/hotmart'}
+                className={cn(
+                  'h-9 rounded-lg px-2.5 text-[13.5px] font-medium transition-colors',
+                  location.pathname === '/hotmart'
+                    ? 'bg-violet-50 text-violet-700 hover:bg-violet-50 hover:text-violet-700'
+                    : 'text-zinc-600 hover:bg-zinc-100/70 hover:text-zinc-900',
+                )}
+              >
+                <Link to="/hotmart">
+                  <ShoppingBag
+                    className={cn(
+                      'h-4 w-4',
+                      location.pathname === '/hotmart' ? 'text-violet-600' : 'text-zinc-400',
+                    )}
+                  />
+                  <span>Logs de Webhook</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
           </SidebarMenu>
 
           <div className="px-2 pb-2 pt-6 text-[11px] font-semibold uppercase tracking-wider text-zinc-400">

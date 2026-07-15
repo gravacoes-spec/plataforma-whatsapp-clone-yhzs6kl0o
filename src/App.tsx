@@ -17,6 +17,7 @@ import Users from './pages/Users'
 import CrmPipeline from './pages/CrmPipeline'
 import NotFound from './pages/NotFound'
 import Cadastro from './pages/Cadastro'
+import HotmartLogs from './pages/HotmartLogs'
 
 const App = () => (
   <BrowserRouter future={{ v7_startTransition: false, v7_relativeSplatPath: false }}>
@@ -38,6 +39,7 @@ const App = () => (
             <Route path="/crm/pipeline" element={<CrmPipeline />} />
             <Route path="/crm/tasks" element={<Tasks />} />
             <Route path="/admin/users" element={<Users />} />
+            <Route path="/hotmart" element={<HotmartLogs />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
