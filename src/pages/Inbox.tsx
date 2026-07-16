@@ -36,6 +36,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { useToast } from '@/hooks/use-toast'
+import { useAuth } from '@/hooks/use-auth'
 import { useNavigate, useLocation } from 'react-router-dom'
 import {
   AlertDialog,
@@ -86,6 +87,7 @@ export default function Inbox() {
   const scrollRef = useRef<HTMLDivElement>(null)
   const isFirstLoadRef = useRef(true)
   const { toast } = useToast()
+  const { isAuthenticated, loading: authLoading } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
 
@@ -110,14 +112,24 @@ export default function Inbox() {
   }, [audioPreviewUrl])
 
   useEffect(() => {
+    if (authLoading || !isAuthenticated) return
+
+    let cancelled = false
+
     const init = async () => {
-      const insts = await getInstances()
-      if (insts.length > 0) {
-        setInstance(insts[0])
+      try {
+        const insts = await getInstances()
+        if (cancelled) return
+        if (insts.length > 0) {
+          setInstance(insts[0])
+        }
+      } catch (e) {
+        console.error('Failed to load instances:', e)
       }
 
       try {
         const data = await getContacts()
+        if (cancelled) return
         setContacts(data)
         setFilteredContacts(data)
 
@@ -126,15 +138,25 @@ export default function Inbox() {
           if (contact) setSelectedContact(contact)
         }
       } catch (e) {
-        console.error(e)
+        console.error('Failed to load contacts:', e)
+        if (!cancelled) {
+          setContacts([])
+          setFilteredContacts([])
+        }
       } finally {
-        setLoadingContacts(false)
+        if (!cancelled) setLoadingContacts(false)
       }
     }
     init()
-  }, [])
+
+    return () => {
+      cancelled = true
+    }
+  }, [authLoading, isAuthenticated])
 
   useEffect(() => {
+    if (authLoading || !isAuthenticated) return
+
     let cancelled = false
     const fetchToken = async () => {
       try {
@@ -150,53 +172,69 @@ export default function Inbox() {
       cancelled = true
       clearInterval(interval)
     }
-  }, [])
+  }, [authLoading, isAuthenticated])
 
-  useRealtime('whatsapp_instances', async () => {
-    const insts = await getInstances()
-    if (insts.length > 0) {
-      setInstance(insts[0])
-    }
-  })
+  useRealtime(
+    'whatsapp_instances',
+    async () => {
+      try {
+        const insts = await getInstances()
+        if (insts.length > 0) {
+          setInstance(insts[0])
+        }
+      } catch (e) {
+        console.error('Failed to refresh instances:', e)
+      }
+    },
+    isAuthenticated,
+  )
 
-  useRealtime('whatsapp_contacts', (e) => {
-    setContacts((prev) => {
-      if (e.action === 'create') {
-        if (prev.find((c) => c.id === e.record.id)) return prev
-        return [e.record, ...prev]
-      } else if (e.action === 'update') {
-        return prev.map((c) => (c.id === e.record.id ? e.record : c))
-      } else if (e.action === 'delete') {
-        return prev.filter((c) => c.id !== e.record.id)
-      }
-      return prev
-    })
-    setSelectedContact((prev: any) => {
-      if (prev && prev.id === e.record.id) {
-        return e.action === 'delete' ? null : { ...prev, ...e.record }
-      }
-      return prev
-    })
-  })
+  useRealtime(
+    'whatsapp_contacts',
+    (e) => {
+      setContacts((prev) => {
+        if (e.action === 'create') {
+          if (prev.find((c) => c.id === e.record.id)) return prev
+          return [e.record, ...prev]
+        } else if (e.action === 'update') {
+          return prev.map((c) => (c.id === e.record.id ? e.record : c))
+        } else if (e.action === 'delete') {
+          return prev.filter((c) => c.id !== e.record.id)
+        }
+        return prev
+      })
+      setSelectedContact((prev: any) => {
+        if (prev && prev.id === e.record.id) {
+          return e.action === 'delete' ? null : { ...prev, ...e.record }
+        }
+        return prev
+      })
+    },
+    isAuthenticated,
+  )
 
   const selectedContactId = selectedContact?.id
 
-  useRealtime('whatsapp_messages', (e) => {
-    if (selectedContactId && e.record.contact_id === selectedContactId) {
-      if (e.action === 'create') {
-        setMessages((prev) => {
-          if (prev.find((m) => m.id === e.record.id)) return prev
-          return sortMessagesList([...prev, e.record])
-        })
-      } else if (e.action === 'update') {
-        setMessages((prev) =>
-          sortMessagesList(prev.map((m) => (m.id === e.record.id ? e.record : m))),
-        )
-      } else if (e.action === 'delete') {
-        setMessages((prev) => prev.filter((m) => m.id !== e.record.id))
+  useRealtime(
+    'whatsapp_messages',
+    (e) => {
+      if (selectedContactId && e.record.contact_id === selectedContactId) {
+        if (e.action === 'create') {
+          setMessages((prev) => {
+            if (prev.find((m) => m.id === e.record.id)) return prev
+            return sortMessagesList([...prev, e.record])
+          })
+        } else if (e.action === 'update') {
+          setMessages((prev) =>
+            sortMessagesList(prev.map((m) => (m.id === e.record.id ? e.record : m))),
+          )
+        } else if (e.action === 'delete') {
+          setMessages((prev) => prev.filter((m) => m.id !== e.record.id))
+        }
       }
-    }
-  })
+    },
+    isAuthenticated,
+  )
 
   useEffect(() => {
     if (selectedContactId) {
@@ -306,7 +344,8 @@ export default function Inbox() {
       const msgs = await getMessages(contactId)
       setMessages(sortMessagesList(msgs))
     } catch (e) {
-      console.error(e)
+      console.error('Failed to load messages:', e)
+      setMessages([])
     } finally {
       setLoadingMessages(false)
     }
