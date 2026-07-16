@@ -109,12 +109,13 @@ export default function Layout() {
 
   const crmNavItems = [
     { to: '/crm/leads', label: 'Leads', icon: Contact },
+    { to: '/crm/clientes', label: 'Clientes', icon: UsersRound },
     { to: '/crm/pipeline', label: 'Pipeline CRM', icon: Kanban },
     { to: '/crm/tasks', label: 'Minhas Tarefas', icon: CheckSquare },
   ]
 
   if (user?.perfil_acess === 'Gestor' || user?.perfil_acess === 'Suporte') {
-    crmNavItems.push({ to: '/admin/users', label: 'Usuários', icon: UsersRound })
+    crmNavItems.push({ to: '/admin/users', label: 'Usuários e Mentores', icon: Settings2 })
   }
 
   return (

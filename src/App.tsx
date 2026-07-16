@@ -12,6 +12,7 @@ import Inbox from './pages/Inbox'
 import Agents from './pages/Agents'
 
 import Leads from './pages/Leads'
+import Clientes from './pages/Clientes'
 import Tasks from './pages/Tasks'
 import Users from './pages/Users'
 import CrmPipeline from './pages/CrmPipeline'
@@ -36,6 +37,7 @@ const App = () => (
             <Route path="/agents" element={<Agents />} />
 
             <Route path="/crm/leads" element={<Leads />} />
+            <Route path="/crm/clientes" element={<Clientes />} />
             <Route path="/crm/pipeline" element={<CrmPipeline />} />
             <Route path="/crm/tasks" element={<Tasks />} />
             <Route path="/admin/users" element={<Users />} />

@@ -249,7 +249,7 @@ routerAdd('POST', '/backend/v1/webhook/hotmart', (e) => {
             var mRecs = $app.findRecordsByFilter(
               'Metas',
               'vend_resp = "' +
-                lead.id +
+                vRespId +
                 '" && periodo_in <= "' +
                 nowStr +
                 '" && periodo_fin >= "' +
@@ -276,7 +276,7 @@ routerAdd('POST', '/backend/v1/webhook/hotmart', (e) => {
             try {
               var mCol2 = $app.findCollectionByNameOrId('Metas')
               metas = new Record(mCol2)
-              metas.set('vend_resp', lead.id)
+              metas.set('vend_resp', vRespId)
               metas.set(
                 'periodo_in',
                 new Date(new Date().getFullYear(), 0, 1).toISOString().replace('T', ' '),

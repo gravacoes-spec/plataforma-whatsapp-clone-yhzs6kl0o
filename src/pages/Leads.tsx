@@ -127,7 +127,7 @@ export default function Leads() {
         hrs_est_dia: '1-2h',
         maior_dif: 'Tempo',
         top_obj: 'Aprovacao',
-        inv_prep: 'Medio',
+        inv_prep: 'R$ 500-1000',
         dias_ment: [],
         mentoria: false,
       },
@@ -284,7 +284,7 @@ export default function Leads() {
                 <TabsList className="w-full grid grid-cols-5">
                   <TabsTrigger value="basico">Básico</TabsTrigger>
                   <TabsTrigger value="comercial">Comercial</TabsTrigger>
-                  <TabsTrigger value="academico">Acadêmico</TabsTrigger>
+                  <TabsTrigger value="academico">Acad. e Financeiro</TabsTrigger>
                   <TabsTrigger value="estudos">Estudos</TabsTrigger>
                   <TabsTrigger value="conversao">Conversão</TabsTrigger>
                 </TabsList>
@@ -438,6 +438,21 @@ export default function Leads() {
                       </SelectContent>
                     </Select>
                   </div>
+                  <div className="space-y-2">
+                    <Label>Renda</Label>
+                    <Select
+                      value={editingLead.renda || ''}
+                      onValueChange={(v) => setEditingLead({ ...editingLead, renda: v })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Possui renda própria">Possui renda própria</SelectItem>
+                        <SelectItem value="Sem renda própria">Sem renda própria</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </TabsContent>
 
                 <TabsContent value="estudos" className="space-y-4 mt-0">
@@ -519,9 +534,9 @@ export default function Leads() {
                         <SelectValue placeholder="Selecione..." />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Baixo">Baixo</SelectItem>
-                        <SelectItem value="Medio">Médio</SelectItem>
-                        <SelectItem value="Alto">Alto</SelectItem>
+                        <SelectItem value="Até R$ 500">Até R$ 500</SelectItem>
+                        <SelectItem value="R$ 500-1000">R$ 500-1000</SelectItem>
+                        <SelectItem value="+ R$ 1000">+ R$ 1000</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>

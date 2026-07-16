@@ -15,12 +15,20 @@ import {
 import { useToast } from '@/hooks/use-toast'
 import { MessageSquare, Loader2 } from 'lucide-react'
 import { extractFieldErrors } from '@/lib/pocketbase/errors'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 
 export default function Register() {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [passwordConfirm, setPasswordConfirm] = useState('')
+  const [perfilAcess, setPerfilAcess] = useState('Vendedor')
   const [loading, setLoading] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const { signUp } = useAuth()
@@ -51,7 +59,7 @@ export default function Register() {
     }
 
     setLoading(true)
-    const { error } = await signUp(email, password, passwordConfirm, name)
+    const { error } = await signUp(email, password, passwordConfirm, name, perfilAcess)
     setLoading(false)
 
     if (error) {
@@ -138,6 +146,18 @@ export default function Register() {
                 {errors.passwordConfirm && (
                   <p className="text-xs text-red-500">{errors.passwordConfirm}</p>
                 )}
+              </div>
+              <div className="space-y-2">
+                <Label>Perfil de Acesso</Label>
+                <Select value={perfilAcess} onValueChange={setPerfilAcess}>
+                  <SelectTrigger className="focus:ring-violet-600">
+                    <SelectValue placeholder="Selecione um perfil" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Vendedor">Vendedor</SelectItem>
+                    <SelectItem value="Mentor(a)">Mentor(a)</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </CardContent>
             <CardFooter className="flex flex-col gap-4">

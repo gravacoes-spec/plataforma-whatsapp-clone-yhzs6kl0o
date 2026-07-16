@@ -39,6 +39,8 @@ const formSchema = z.object({
   maior_dif: z.string().min(1, 'Obrigatório'),
   top_obj: z.string().min(1, 'Obrigatório'),
   int_perito: z.string().min(1, 'Obrigatório'),
+  renda: z.string().min(1, 'Obrigatório'),
+  inv_prep: z.string().min(1, 'Obrigatório'),
   dias_ment: z.array(z.string()).min(1, 'Selecione ao menos um dia'),
 })
 
@@ -67,6 +69,8 @@ export default function Cadastro() {
       maior_dif: '',
       top_obj: '',
       int_perito: '',
+      renda: '',
+      inv_prep: '',
       dias_ment: [],
     },
   })
@@ -117,7 +121,7 @@ export default function Cadastro() {
             <img src={logoUrl} alt="Perícia Foco" className="h-28 object-contain" />
           </div>
           <h1 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
-            Consultoria de Preparação Pericial
+            Consultoria de Estudos para Concursos Periciais
           </h1>
           <div className="text-zinc-300 space-y-4 text-left sm:text-center text-lg leading-relaxed max-w-2xl mx-auto">
             <p>
@@ -414,8 +418,57 @@ export default function Cadastro() {
 
               <div className="space-y-6 pt-4">
                 <h3 className="text-xl font-semibold text-white border-b border-[#27272a] pb-2">
-                  Disponibilidade
+                  Disponibilidade financeira e agenda
                 </h3>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pb-4">
+                  <FormField
+                    control={form.control}
+                    name="renda"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-zinc-300">Situação de Renda</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger className="bg-[#09090b] border-[#27272a] text-white focus:ring-amber-500">
+                              <SelectValue placeholder="Selecione" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent className="bg-[#18181b] border-[#27272a] text-white">
+                            <SelectItem value="Possui renda própria">
+                              Possui renda própria
+                            </SelectItem>
+                            <SelectItem value="Sem renda própria">Sem renda própria</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage className="text-red-400" />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="inv_prep"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-zinc-300">Investimento em Preparação</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger className="bg-[#09090b] border-[#27272a] text-white focus:ring-amber-500">
+                              <SelectValue placeholder="Selecione" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent className="bg-[#18181b] border-[#27272a] text-white">
+                            <SelectItem value="Até R$ 500">Até R$ 500</SelectItem>
+                            <SelectItem value="R$ 500-1000">R$ 500-1000</SelectItem>
+                            <SelectItem value="+ R$ 1000">+ R$ 1000</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage className="text-red-400" />
+                      </FormItem>
+                    )}
+                  />
+                </div>
 
                 <FormField
                   control={form.control}

@@ -8,6 +8,7 @@ interface AuthContextType {
     password: string,
     passwordConfirm: string,
     name: string,
+    perfil_acess?: string,
   ) => Promise<{ error: any }>
   signIn: (email: string, password: string) => Promise<{ error: any }>
   signOut: () => void
@@ -36,9 +37,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [])
 
-  const signUp = async (email: string, password: string, passwordConfirm: string, name: string) => {
+  const signUp = async (
+    email: string,
+    password: string,
+    passwordConfirm: string,
+    name: string,
+    perfil_acess: string = 'Vendedor',
+  ) => {
     try {
-      await pb.collection('users').create({ email, password, passwordConfirm, name })
+      await pb.collection('users').create({ email, password, passwordConfirm, name, perfil_acess })
       await pb.collection('users').authWithPassword(email, password)
       return { error: null }
     } catch (error) {
