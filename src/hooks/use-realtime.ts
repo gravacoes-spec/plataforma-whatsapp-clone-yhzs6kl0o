@@ -3,16 +3,24 @@ import type { RecordModel, RecordSubscription } from 'pocketbase'
 
 import pb from '@/lib/pocketbase/client'
 
-/**
- * Hook for real-time subscriptions to a PocketBase collection.
- * ALWAYS use this hook instead of subscribing inline.
- * Uses the per-listener UnsubscribeFunc so multiple components
- * can safely subscribe to the same collection without conflicts.
- *
- * Generic over the record type: pass your collection's interface as
- * `useRealtime<MyRecord>(...)` to get a typed subscription payload
- * instead of `unknown`.
- */
+let connectPromise: Promise<void> | null = null
+
+function ensureRealtimeConnection(): Promise<void> {
+  if (connectPromise) return connectPromise
+
+  connectPromise = (async () => {
+    try {
+      if (typeof pb.realtime?.connect === 'function') {
+        await pb.realtime.connect()
+      }
+    } finally {
+      connectPromise = null
+    }
+  })()
+
+  return connectPromise
+}
+
 export function useRealtime<TRecord extends RecordModel = RecordModel>(
   collectionName: string,
   callback: (data: RecordSubscription<TRecord>) => void,
@@ -26,22 +34,37 @@ export function useRealtime<TRecord extends RecordModel = RecordModel>(
 
     let unsubscribeFn: (() => Promise<void>) | undefined
     let cancelled = false
+    let retryTimeout: ReturnType<typeof setTimeout> | undefined
 
-    pb.collection<TRecord>(collectionName)
-      .subscribe('*', (e) => {
-        callbackRef.current(e)
-      })
-      .then((fn) => {
+    const subscribeWithRetry = async (attempt: number = 0) => {
+      if (cancelled) return
+
+      try {
+        await ensureRealtimeConnection()
+        if (cancelled) return
+
+        const fn = await pb.collection<TRecord>(collectionName).subscribe('*', (e) => {
+          callbackRef.current(e)
+        })
+
         if (cancelled) {
           fn().catch(() => {})
         } else {
           unsubscribeFn = fn
         }
-      })
-      .catch(() => {})
+      } catch {
+        if (cancelled) return
+        if (attempt >= 4) return
+        const delay = Math.min(1000 * Math.pow(2, attempt), 8000)
+        retryTimeout = setTimeout(() => subscribeWithRetry(attempt + 1), delay)
+      }
+    }
+
+    subscribeWithRetry()
 
     return () => {
       cancelled = true
+      if (retryTimeout) clearTimeout(retryTimeout)
       if (unsubscribeFn) {
         unsubscribeFn().catch(() => {})
       }

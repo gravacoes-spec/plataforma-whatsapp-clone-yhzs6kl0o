@@ -59,6 +59,8 @@ export default function Tasks() {
   }, [])
 
   useRealtime('tasks', () => loadData())
+  useRealtime('whatsapp_instances', () => loadData())
+  useRealtime('Leads', () => loadData())
 
   const toggleTask = async (task: any) => {
     try {
