@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-16T14:48:24.871Z",
+  "generatedAt": "2026-07-16T14:55:58.100Z",
   "collections": [
     {
       "name": "users",
@@ -48,7 +48,8 @@
       ],
       "indexes": [
         "CREATE UNIQUE INDEX `idx_tokenKey__pb_users_auth_` ON `users` (`tokenKey`)",
-        "CREATE UNIQUE INDEX `idx_email__pb_users_auth_` ON `users` (`email`) WHERE `email` != ''"
+        "CREATE UNIQUE INDEX `idx_email__pb_users_auth_` ON `users` (`email`) WHERE `email` != ''",
+        "CREATE INDEX `idx_users_perfil` ON `users` (perfil_acess)"
       ]
     },
     {
@@ -451,13 +452,6 @@
           "selectValues": ["1-2h", "3-4h", "5-6h", "7h+"]
         },
         {
-          "name": "inv_prep",
-          "type": "select",
-          "required": false,
-          "system": false,
-          "selectValues": ["Baixo", "Medio", "Alto"]
-        },
-        {
           "name": "created",
           "type": "autodate",
           "required": false,
@@ -596,6 +590,13 @@
           "type": "bool",
           "required": false,
           "system": false
+        },
+        {
+          "name": "inv_prep",
+          "type": "select",
+          "required": false,
+          "system": false,
+          "selectValues": ["Até R$ 500", "R$ 500-1000", "+ R$ 1000"]
         }
       ],
       "indexes": [
@@ -615,13 +616,6 @@
         "delete": "@request.auth.id != '' && (@request.auth.perfil_acess = 'Gestor' || @request.auth.perfil_acess = 'Suporte')"
       },
       "fields": [
-        {
-          "name": "vend_resp",
-          "type": "relation",
-          "required": false,
-          "system": false,
-          "collectionRef": "Leads"
-        },
         {
           "name": "periodo_in",
           "type": "date",
@@ -707,6 +701,13 @@
           "required": false,
           "system": false,
           "autodateTriggers": ["onCreate", "onUpdate"]
+        },
+        {
+          "name": "vend_resp",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "users"
         }
       ],
       "indexes": []
@@ -1075,7 +1076,8 @@
       ],
       "indexes": [
         "CREATE INDEX idx_vh_email ON vendas_hotmart (email_comprador)",
-        "CREATE INDEX idx_vh_transacao ON vendas_hotmart (transacao)"
+        "CREATE INDEX idx_vh_transacao ON vendas_hotmart (transacao)",
+        "CREATE INDEX `idx_vh_status` ON `vendas_hotmart` (status_compra)"
       ]
     },
     {

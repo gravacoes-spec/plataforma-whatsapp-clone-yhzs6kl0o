@@ -1,34 +1,30 @@
 migrate(
   (app) => {
     const col = app.findCollectionByNameOrId('Metas')
-
     col.fields.add(
       new RelationField({
-        name: 'vend_resp_tmp',
+        name: 'vend_resp',
         collectionId: '_pb_users_auth_',
         maxSelect: 1,
         cascadeDelete: false,
       }),
     )
-
     app.save(col)
 
     try {
       app
         .db()
         .newQuery(`
-        UPDATE \`Metas\` 
-        SET vend_resp_tmp = (SELECT vend_resp FROM \`Leads\` WHERE \`Leads\`.id = \`Metas\`.vend_resp LIMIT 1)
-        WHERE vend_resp IS NOT NULL AND vend_resp != ''
-      `)
+      UPDATE \`Metas\` 
+      SET vend_resp = vend_resp_tmp
+      WHERE vend_resp_tmp IS NOT NULL AND vend_resp_tmp != ''
+    `)
         .execute()
     } catch (_) {}
   },
   (app) => {
     const col = app.findCollectionByNameOrId('Metas')
-
-    col.fields.removeByName('vend_resp_tmp')
-
+    col.fields.removeByName('vend_resp')
     app.save(col)
   },
 )
