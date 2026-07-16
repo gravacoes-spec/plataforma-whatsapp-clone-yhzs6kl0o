@@ -1,4 +1,4 @@
-routerAdd('POST', '/api/webhook/hotmart', (e) => {
+routerAdd('POST', '/backend/v1/webhook/hotmart', (e) => {
   const body = e.requestInfo().body || {}
 
   const hottok =
@@ -139,7 +139,19 @@ routerAdd('POST', '/api/webhook/hotmart', (e) => {
       }
     } catch (_) {}
 
-    if (lead) {
+    if (!lead && (buyer.email || telefoneComprador)) {
+      try {
+        var leadsCol2 = $app.findCollectionByNameOrId('Leads')
+        lead = new Record(leadsCol2)
+        lead.set('name', buyer.name || '')
+        lead.set('email', buyer.email || '')
+        lead.set('phone', telefoneComprador || '')
+        lead.set('etapa_pipeline', '8. Venda Realizada')
+        $app.saveNoValidate(lead)
+      } catch (createErr) {
+        $app.logger().error('Failed to create Lead from Hotmart', 'error', String(createErr))
+      }
+    } else if (lead) {
       if (
         body.event === 'PURCHASE_APPROVED' ||
         purchase.status === 'APPROVED' ||
@@ -148,6 +160,9 @@ routerAdd('POST', '/api/webhook/hotmart', (e) => {
         lead.set('etapa_pipeline', '8. Venda Realizada')
         $app.saveNoValidate(lead)
       }
+    }
+
+    if (lead) {
       vendasRecord.set('lead_id', lead.id)
     }
 
@@ -216,6 +231,92 @@ routerAdd('POST', '/api/webhook/hotmart', (e) => {
           $app.delete(cliente)
         }
       } catch (_) {}
+    }
+
+    if (lead) {
+      var vRespId = lead.getString('vend_resp')
+      if (vRespId) {
+        var isVendedor = false
+        try {
+          var vUser = $app.findRecordById('users', vRespId)
+          isVendedor = vUser.getString('perfil_acess') === 'Vendedor'
+        } catch (_) {}
+
+        if (isVendedor) {
+          var nowStr = new Date().toISOString().replace('T', ' ')
+          var metas = null
+          try {
+            var mRecs = $app.findRecordsByFilter(
+              'Metas',
+              'vend_resp = "' +
+                lead.id +
+                '" && periodo_in <= "' +
+                nowStr +
+                '" && periodo_fin >= "' +
+                nowStr +
+                '"',
+              '-created',
+              1,
+              0,
+            )
+            if (mRecs.length > 0) metas = mRecs[0]
+          } catch (_) {}
+
+          var isApproved =
+            body.event === 'PURCHASE_APPROVED' ||
+            purchase.status === 'APPROVED' ||
+            purchase.status === 'COMPLETE'
+          var isCancelled =
+            body.event === 'PURCHASE_CANCELED' ||
+            body.event === 'PURCHASE_REFUNDED' ||
+            purchase.status === 'CANCELED' ||
+            purchase.status === 'REFUNDED'
+
+          if (isApproved && !metas) {
+            try {
+              var mCol2 = $app.findCollectionByNameOrId('Metas')
+              metas = new Record(mCol2)
+              metas.set('vend_resp', lead.id)
+              metas.set(
+                'periodo_in',
+                new Date(new Date().getFullYear(), 0, 1).toISOString().replace('T', ' '),
+              )
+              metas.set(
+                'periodo_fin',
+                new Date(new Date().getFullYear(), 11, 31, 23, 59, 59)
+                  .toISOString()
+                  .replace('T', ' '),
+              )
+              metas.set('r_vendas', 0)
+              metas.set('r_faturamento', 0)
+              metas.set('r_leads_recebidos', 0)
+              metas.set('r_abord_prospec_ativa', 0)
+              metas.set('r_apresent_consult', 0)
+              metas.set('m_leads_recebidos', 0)
+              metas.set('m_abord_prospec_ativa', 0)
+              metas.set('m_apresent_consult', 0)
+              metas.set('m_vendas', 0)
+              metas.set('m_faturamento', 0)
+            } catch (_) {}
+          }
+
+          if (isApproved && metas) {
+            metas.set('r_vendas', (metas.getInt('r_vendas') || 0) + 1)
+            metas.set(
+              'r_faturamento',
+              (metas.getFloat('r_faturamento') || 0) + (fullPrice.value || 0),
+            )
+            $app.saveNoValidate(metas)
+          } else if (isCancelled && metas) {
+            metas.set('r_vendas', Math.max(0, (metas.getInt('r_vendas') || 0) - 1))
+            metas.set(
+              'r_faturamento',
+              Math.max(0, (metas.getFloat('r_faturamento') || 0) - (fullPrice.value || 0)),
+            )
+            $app.saveNoValidate(metas)
+          }
+        }
+      }
     }
 
     logStatus = 'success'

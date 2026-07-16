@@ -104,7 +104,6 @@ export default function Layout() {
 
   const whatsappNavItems = [
     { to: '/inbox', label: 'Caixa de Entrada', icon: MessageSquare },
-    { to: '/pipeline', label: 'Pipeline WhatsApp', icon: Kanban },
     { to: '/agents', label: 'Agentes IA', icon: Bot },
   ]
 

@@ -23,6 +23,11 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
+import { Switch } from '@/components/ui/switch'
+import { getVendasByLead } from '@/services/hotmart'
+import { toast } from 'sonner'
+import { format, parseISO } from 'date-fns'
+import { ptBR } from 'date-fns/locale'
 
 const COLUMNS = [
   { id: '1. Novo Lead', title: 'Novo Lead' },
@@ -54,6 +59,17 @@ export default function CrmPipeline() {
   const [lossModalOpen, setLossModalOpen] = useState(false)
   const [pendingDrop, setPendingDrop] = useState<{ leadId: string; columnId: string } | null>(null)
   const [lossReason, setLossReason] = useState('')
+  const [leadVendas, setLeadVendas] = useState<any[]>([])
+
+  useEffect(() => {
+    if (selectedLead?.id) {
+      getVendasByLead(selectedLead.id)
+        .then(setLeadVendas)
+        .catch(() => setLeadVendas([]))
+    } else {
+      setLeadVendas([])
+    }
+  }, [selectedLead?.id])
 
   const loadData = async () => {
     try {
@@ -165,9 +181,17 @@ export default function CrmPipeline() {
                         className="group flex flex-col p-3.5 bg-white rounded-lg shadow-sm border border-zinc-200 hover:border-violet-300 hover:shadow-md transition-all cursor-grab active:cursor-grabbing"
                       >
                         <div className="flex justify-between items-start mb-2 gap-2">
-                          <span className="font-semibold text-[13px] text-zinc-800 line-clamp-1">
-                            {lead.name || 'Sem nome'}
-                          </span>
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <span className="font-semibold text-[13px] text-zinc-800 line-clamp-1">
+                              {lead.name || 'Sem nome'}
+                            </span>
+                            {lead.pending_interaction && (
+                              <span
+                                className="flex items-center justify-center h-4 w-4 rounded-full bg-amber-400 shrink-0"
+                                title="Interação pendente"
+                              />
+                            )}
+                          </div>
                           <span
                             className={cn(
                               'flex items-center justify-center h-5 w-5 rounded-full text-[10px] font-bold shrink-0',
@@ -315,6 +339,67 @@ export default function CrmPipeline() {
                       <span className="font-medium text-zinc-900 text-right max-w-[220px]">
                         {selectedLead.top_obj || '-'}
                       </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <h4 className="text-[11px] font-bold tracking-wider text-zinc-400 uppercase">
+                    Conversão
+                  </h4>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[13px] text-zinc-500">Mentoria Ativa:</span>
+                      <Switch
+                        checked={!!selectedLead.mentoria}
+                        onCheckedChange={async (checked) => {
+                          try {
+                            await updateLead(selectedLead.id, { mentoria: checked })
+                            setSelectedLead({ ...selectedLead, mentoria: checked })
+                            toast.success('Lead atualizado')
+                          } catch {
+                            toast.error('Erro ao atualizar')
+                          }
+                        }}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <span className="text-[13px] text-zinc-500">Histórico de Compras:</span>
+                      {leadVendas.length > 0 ? (
+                        <div className="space-y-2">
+                          {leadVendas.map((v) => (
+                            <div
+                              key={v.id}
+                              className="flex flex-col p-3 bg-zinc-50 rounded-lg border border-zinc-100"
+                            >
+                              <div className="flex justify-between items-center">
+                                <span className="text-[13px] font-medium text-zinc-800">
+                                  {v.nome_produto || '-'}
+                                </span>
+                                <span className="text-[12px] font-semibold text-emerald-600">
+                                  {v.moeda} {v.preco_total?.toFixed(2)}
+                                </span>
+                              </div>
+                              <div className="flex justify-between items-center mt-1">
+                                <span className="text-[11px] text-zinc-500">
+                                  {v.status_compra || '-'}
+                                </span>
+                                <span className="text-[11px] text-zinc-400">
+                                  {v.data_pedido
+                                    ? format(parseISO(v.data_pedido), 'dd/MM/yyyy', {
+                                        locale: ptBR,
+                                      })
+                                    : '-'}
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-[12px] text-zinc-400 italic">
+                          Nenhuma compra registrada.
+                        </p>
+                      )}
                     </div>
                   </div>
                 </div>

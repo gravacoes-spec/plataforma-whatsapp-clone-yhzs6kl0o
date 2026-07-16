@@ -149,9 +149,11 @@ routerAdd('POST', '/backend/v1/webhook/evolution', (e) => {
       contact.set('last_message_at', new Date().toISOString())
       $app.saveNoValidate(contact)
 
+      var messageCreated = false
       try {
         $app.findFirstRecordByData('whatsapp_messages', 'message_id', messageId)
       } catch (_) {
+        messageCreated = true
         const msgsCol = $app.findCollectionByNameOrId('whatsapp_messages')
         const msgRecord = new Record(msgsCol)
         msgRecord.set('user_id', userId)
@@ -196,6 +198,130 @@ routerAdd('POST', '/backend/v1/webhook/evolution', (e) => {
         }
 
         $app.saveNoValidate(msgRecord)
+      }
+
+      var contactPhone = contact.getString('phone')
+      if (contactPhone) {
+        var cleanPhone = contactPhone.replace(/\D/g, '')
+        var lead = null
+        try {
+          lead = $app.findFirstRecordByFilter('Leads', 'phone = "' + contactPhone + '"')
+        } catch (_) {
+          if (cleanPhone.length >= 10) {
+            try {
+              lead = $app.findFirstRecordByFilter(
+                'Leads',
+                'phone ~ "' + cleanPhone.slice(-10) + '"',
+              )
+            } catch (_) {}
+          }
+        }
+
+        if (!lead && !fromMe) {
+          try {
+            var leadsCol = $app.findCollectionByNameOrId('Leads')
+            lead = new Record(leadsCol)
+            lead.set('name', pushName)
+            lead.set('phone', contactPhone)
+            lead.set('etapa_pipeline', '1. Novo Lead')
+            lead.set('vend_resp', userId)
+            lead.set('pending_interaction', true)
+            $app.saveNoValidate(lead)
+          } catch (createErr) {
+            $app.logger().error('Failed to auto-create Lead', 'error', String(createErr))
+          }
+        } else if (lead) {
+          var needsUpdate = false
+          if (!lead.getString('vend_resp')) {
+            lead.set('vend_resp', userId)
+            needsUpdate = true
+          }
+          if (fromMe) {
+            if (lead.getBool('pending_interaction')) {
+              lead.set('pending_interaction', false)
+              needsUpdate = true
+            }
+          } else {
+            if (!lead.getBool('pending_interaction')) {
+              lead.set('pending_interaction', true)
+              needsUpdate = true
+            }
+          }
+          if (needsUpdate) {
+            $app.saveNoValidate(lead)
+          }
+        }
+
+        if (messageCreated && fromMe && lead) {
+          var hasIncoming = false
+          try {
+            var inMsgs = $app.findRecordsByFilter(
+              'whatsapp_messages',
+              'contact_id = "' + contact.id + '" && direction = "in"',
+              '-created',
+              1,
+              0,
+            )
+            hasIncoming = inMsgs.length > 0
+          } catch (_) {}
+
+          if (!hasIncoming) {
+            var vRespId = lead.getString('vend_resp')
+            if (vRespId) {
+              var nowStr = new Date().toISOString().replace('T', ' ')
+              var m = null
+              try {
+                var mRecs = $app.findRecordsByFilter(
+                  'Metas',
+                  'vend_resp = "' +
+                    lead.id +
+                    '" && periodo_in <= "' +
+                    nowStr +
+                    '" && periodo_fin >= "' +
+                    nowStr +
+                    '"',
+                  '-created',
+                  1,
+                  0,
+                )
+                if (mRecs.length > 0) m = mRecs[0]
+              } catch (_) {}
+
+              if (!m) {
+                try {
+                  var mCol = $app.findCollectionByNameOrId('Metas')
+                  m = new Record(mCol)
+                  m.set('vend_resp', lead.id)
+                  m.set(
+                    'periodo_in',
+                    new Date(new Date().getFullYear(), 0, 1).toISOString().replace('T', ' '),
+                  )
+                  m.set(
+                    'periodo_fin',
+                    new Date(new Date().getFullYear(), 11, 31, 23, 59, 59)
+                      .toISOString()
+                      .replace('T', ' '),
+                  )
+                  m.set('r_abord_prospec_ativa', 0)
+                  m.set('r_vendas', 0)
+                  m.set('r_faturamento', 0)
+                  m.set('r_leads_recebidos', 0)
+                  m.set('r_apresent_consult', 0)
+                  m.set('m_leads_recebidos', 0)
+                  m.set('m_abord_prospec_ativa', 0)
+                  m.set('m_apresent_consult', 0)
+                  m.set('m_vendas', 0)
+                  m.set('m_faturamento', 0)
+                } catch (_) {}
+              }
+
+              if (m) {
+                m.set('r_abord_prospec_ativa', (m.getInt('r_abord_prospec_ativa') || 0) + 1)
+                $app.saveNoValidate(m)
+              }
+            }
+          }
+        }
       }
     }
   } catch (err) {

@@ -23,6 +23,7 @@ export interface LeadRecord {
   dias_ment: string[]
   tags: string
   mentoria: boolean
+  pending_interaction: boolean
   created: string
   updated: string
 }

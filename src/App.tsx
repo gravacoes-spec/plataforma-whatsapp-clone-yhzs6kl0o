@@ -10,7 +10,7 @@ import Register from './pages/Register'
 import ConnectionSetup from './pages/ConnectionSetup'
 import Inbox from './pages/Inbox'
 import Agents from './pages/Agents'
-import Pipeline from './pages/Pipeline'
+
 import Leads from './pages/Leads'
 import Tasks from './pages/Tasks'
 import Users from './pages/Users'
@@ -34,7 +34,7 @@ const App = () => (
             <Route path="/connection-setup" element={<ConnectionSetup />} />
             <Route path="/inbox" element={<Inbox />} />
             <Route path="/agents" element={<Agents />} />
-            <Route path="/pipeline" element={<Pipeline />} />
+
             <Route path="/crm/leads" element={<Leads />} />
             <Route path="/crm/pipeline" element={<CrmPipeline />} />
             <Route path="/crm/tasks" element={<Tasks />} />

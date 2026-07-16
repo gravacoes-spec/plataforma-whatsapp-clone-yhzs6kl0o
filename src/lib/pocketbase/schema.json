@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-16T11:59:49.900Z",
+  "generatedAt": "2026-07-16T13:31:43.187Z",
   "collections": [
     {
       "name": "users",
@@ -29,31 +29,21 @@
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": [
-            "onCreate"
-          ]
+          "autodateTriggers": ["onCreate"]
         },
         {
           "name": "updated",
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": [
-            "onCreate",
-            "onUpdate"
-          ]
+          "autodateTriggers": ["onCreate", "onUpdate"]
         },
         {
           "name": "perfil_acess",
           "type": "select",
           "required": false,
           "system": false,
-          "selectValues": [
-            "Gestor",
-            "Vendedor",
-            "Suporte",
-            "Mentor(a)"
-          ]
+          "selectValues": ["Gestor", "Vendedor", "Suporte", "Mentor(a)"]
         }
       ],
       "indexes": [
@@ -83,12 +73,7 @@
           "type": "select",
           "required": false,
           "system": false,
-          "selectValues": [
-            "pending",
-            "connecting",
-            "connected",
-            "disconnected"
-          ]
+          "selectValues": ["pending", "connecting", "connected", "disconnected"]
         },
         {
           "name": "qrcode",
@@ -101,19 +86,14 @@
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": [
-            "onCreate"
-          ]
+          "autodateTriggers": ["onCreate"]
         },
         {
           "name": "updated",
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": [
-            "onCreate",
-            "onUpdate"
-          ]
+          "autodateTriggers": ["onCreate", "onUpdate"]
         },
         {
           "name": "user_id",
@@ -123,9 +103,7 @@
           "collectionRef": "users"
         }
       ],
-      "indexes": [
-        "CREATE UNIQUE INDEX idx_wi_name ON whatsapp_instances (instance_name)"
-      ]
+      "indexes": ["CREATE UNIQUE INDEX idx_wi_name ON whatsapp_instances (instance_name)"]
     },
     {
       "name": "whatsapp_contacts",
@@ -180,19 +158,14 @@
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": [
-            "onCreate"
-          ]
+          "autodateTriggers": ["onCreate"]
         },
         {
           "name": "updated",
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": [
-            "onCreate",
-            "onUpdate"
-          ]
+          "autodateTriggers": ["onCreate", "onUpdate"]
         },
         {
           "name": "agent_paused",
@@ -205,12 +178,7 @@
           "type": "select",
           "required": false,
           "system": false,
-          "selectValues": [
-            "in_conversation",
-            "waiting",
-            "resolved",
-            "lost"
-          ]
+          "selectValues": ["in_conversation", "waiting", "resolved", "lost"]
         },
         {
           "name": "user_id",
@@ -267,10 +235,7 @@
           "type": "select",
           "required": false,
           "system": false,
-          "selectValues": [
-            "in",
-            "out"
-          ]
+          "selectValues": ["in", "out"]
         },
         {
           "name": "body",
@@ -289,32 +254,21 @@
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": [
-            "onCreate"
-          ]
+          "autodateTriggers": ["onCreate"]
         },
         {
           "name": "updated",
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": [
-            "onCreate",
-            "onUpdate"
-          ]
+          "autodateTriggers": ["onCreate", "onUpdate"]
         },
         {
           "name": "type",
           "type": "select",
           "required": false,
           "system": false,
-          "selectValues": [
-            "text",
-            "image",
-            "audio",
-            "document",
-            "video"
-          ]
+          "selectValues": ["text", "image", "audio", "document", "video"]
         },
         {
           "name": "media_file",
@@ -348,9 +302,7 @@
           "collectionRef": "users"
         }
       ],
-      "indexes": [
-        "CREATE UNIQUE INDEX idx_wm_id ON whatsapp_messages (message_id)"
-      ]
+      "indexes": ["CREATE UNIQUE INDEX idx_wm_id ON whatsapp_messages (message_id)"]
     },
     {
       "name": "ai_agents",
@@ -399,29 +351,21 @@
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": [
-            "onCreate"
-          ]
+          "autodateTriggers": ["onCreate"]
         },
         {
           "name": "updated",
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": [
-            "onCreate",
-            "onUpdate"
-          ]
+          "autodateTriggers": ["onCreate", "onUpdate"]
         },
         {
           "name": "provider",
           "type": "select",
           "required": true,
           "system": false,
-          "selectValues": [
-            "gemini",
-            "openai"
-          ]
+          "selectValues": ["gemini", "openai"]
         },
         {
           "name": "api_key",
@@ -497,63 +441,42 @@
           "type": "select",
           "required": false,
           "system": false,
-          "selectValues": [
-            "Iniciante",
-            "Intermediario",
-            "Avancado"
-          ]
+          "selectValues": ["Iniciante", "Intermediario", "Avancado"]
         },
         {
           "name": "hrs_est_dia",
           "type": "select",
           "required": false,
           "system": false,
-          "selectValues": [
-            "1-2h",
-            "3-4h",
-            "5-6h",
-            "7h+"
-          ]
+          "selectValues": ["1-2h", "3-4h", "5-6h", "7h+"]
         },
         {
           "name": "inv_prep",
           "type": "select",
           "required": false,
           "system": false,
-          "selectValues": [
-            "Baixo",
-            "Medio",
-            "Alto"
-          ]
+          "selectValues": ["Baixo", "Medio", "Alto"]
         },
         {
           "name": "created",
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": [
-            "onCreate"
-          ]
+          "autodateTriggers": ["onCreate"]
         },
         {
           "name": "updated",
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": [
-            "onCreate",
-            "onUpdate"
-          ]
+          "autodateTriggers": ["onCreate", "onUpdate"]
         },
         {
           "name": "int_perito",
           "type": "select",
           "required": false,
           "system": false,
-          "selectValues": [
-            "100% decidido",
-            "Ainda avaliando"
-          ]
+          "selectValues": ["100% decidido", "Ainda avaliando"]
         },
         {
           "name": "tmp_acad",
@@ -571,10 +494,7 @@
           "type": "select",
           "required": false,
           "system": false,
-          "selectValues": [
-            "Possui renda própria",
-            "Sem renda própria"
-          ]
+          "selectValues": ["Possui renda própria", "Sem renda própria"]
         },
         {
           "name": "vend_resp",
@@ -588,14 +508,7 @@
           "type": "select",
           "required": false,
           "system": false,
-          "selectValues": [
-            "SEG",
-            "TER",
-            "QUA",
-            "QUI",
-            "SEXT",
-            "SÁB"
-          ]
+          "selectValues": ["SEG", "TER", "QUA", "QUI", "SEXT", "SÁB"]
         },
         {
           "name": "maior_dif",
@@ -677,6 +590,12 @@
             "9. Follow-up",
             "10. Lead Desqualificado/Perda"
           ]
+        },
+        {
+          "name": "pending_interaction",
+          "type": "bool",
+          "required": false,
+          "system": false
         }
       ],
       "indexes": [
@@ -780,19 +699,14 @@
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": [
-            "onCreate"
-          ]
+          "autodateTriggers": ["onCreate"]
         },
         {
           "name": "updated",
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": [
-            "onCreate",
-            "onUpdate"
-          ]
+          "autodateTriggers": ["onCreate", "onUpdate"]
         }
       ],
       "indexes": []
@@ -928,19 +842,14 @@
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": [
-            "onCreate"
-          ]
+          "autodateTriggers": ["onCreate"]
         },
         {
           "name": "updated",
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": [
-            "onCreate",
-            "onUpdate"
-          ]
+          "autodateTriggers": ["onCreate", "onUpdate"]
         },
         {
           "name": "Mentor_a",
@@ -957,9 +866,7 @@
           "collectionRef": "users"
         }
       ],
-      "indexes": [
-        "CREATE INDEX idx_bd_mentor ON bd_clientes (Mentor_a)"
-      ]
+      "indexes": ["CREATE INDEX idx_bd_mentor ON bd_clientes (Mentor_a)"]
     },
     {
       "name": "webhook_log",
@@ -1001,19 +908,14 @@
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": [
-            "onCreate"
-          ]
+          "autodateTriggers": ["onCreate"]
         },
         {
           "name": "updated",
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": [
-            "onCreate",
-            "onUpdate"
-          ]
+          "autodateTriggers": ["onCreate", "onUpdate"]
         }
       ],
       "indexes": []
@@ -1154,19 +1056,14 @@
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": [
-            "onCreate"
-          ]
+          "autodateTriggers": ["onCreate"]
         },
         {
           "name": "updated",
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": [
-            "onCreate",
-            "onUpdate"
-          ]
+          "autodateTriggers": ["onCreate", "onUpdate"]
         },
         {
           "name": "lead_id",
@@ -1228,24 +1125,17 @@
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": [
-            "onCreate"
-          ]
+          "autodateTriggers": ["onCreate"]
         },
         {
           "name": "updated",
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": [
-            "onCreate",
-            "onUpdate"
-          ]
+          "autodateTriggers": ["onCreate", "onUpdate"]
         }
       ],
-      "indexes": [
-        "CREATE INDEX idx_bdm_email ON bd_mentor (email)"
-      ]
+      "indexes": ["CREATE INDEX idx_bdm_email ON bd_mentor (email)"]
     },
     {
       "name": "tasks",
@@ -1302,19 +1192,14 @@
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": [
-            "onCreate"
-          ]
+          "autodateTriggers": ["onCreate"]
         },
         {
           "name": "updated",
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": [
-            "onCreate",
-            "onUpdate"
-          ]
+          "autodateTriggers": ["onCreate", "onUpdate"]
         },
         {
           "name": "user_id",

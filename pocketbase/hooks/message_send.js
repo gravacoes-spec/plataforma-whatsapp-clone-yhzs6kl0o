@@ -159,6 +159,105 @@ routerAdd(
     contact.set('last_message_at', new Date().toISOString())
     $app.saveNoValidate(contact)
 
+    var contactPhone = contact.getString('phone')
+    if (contactPhone) {
+      var cleanPhone = contactPhone.replace(/\D/g, '')
+      var lead = null
+      try {
+        lead = $app.findFirstRecordByFilter('Leads', 'phone = "' + contactPhone + '"')
+      } catch (_) {
+        if (cleanPhone.length >= 10) {
+          try {
+            lead = $app.findFirstRecordByFilter('Leads', 'phone ~ "' + cleanPhone.slice(-10) + '"')
+          } catch (_) {}
+        }
+      }
+
+      if (lead) {
+        var needsUpdate = false
+        if (!lead.getString('vend_resp')) {
+          lead.set('vend_resp', e.auth.id)
+          needsUpdate = true
+        }
+        if (lead.getBool('pending_interaction')) {
+          lead.set('pending_interaction', false)
+          needsUpdate = true
+        }
+        if (needsUpdate) {
+          $app.saveNoValidate(lead)
+        }
+
+        var hasIncoming = false
+        try {
+          var inMsgs = $app.findRecordsByFilter(
+            'whatsapp_messages',
+            'contact_id = "' + contact.id + '" && direction = "in"',
+            '-created',
+            1,
+            0,
+          )
+          hasIncoming = inMsgs.length > 0
+        } catch (_) {}
+
+        if (!hasIncoming) {
+          var vRespId = lead.getString('vend_resp')
+          if (vRespId) {
+            var nowStr = new Date().toISOString().replace('T', ' ')
+            var metas = null
+            try {
+              var mRecs = $app.findRecordsByFilter(
+                'Metas',
+                'vend_resp = "' +
+                  lead.id +
+                  '" && periodo_in <= "' +
+                  nowStr +
+                  '" && periodo_fin >= "' +
+                  nowStr +
+                  '"',
+                '-created',
+                1,
+                0,
+              )
+              if (mRecs.length > 0) metas = mRecs[0]
+            } catch (_) {}
+
+            if (!metas) {
+              try {
+                var mCol = $app.findCollectionByNameOrId('Metas')
+                metas = new Record(mCol)
+                metas.set('vend_resp', lead.id)
+                metas.set(
+                  'periodo_in',
+                  new Date(new Date().getFullYear(), 0, 1).toISOString().replace('T', ' '),
+                )
+                metas.set(
+                  'periodo_fin',
+                  new Date(new Date().getFullYear(), 11, 31, 23, 59, 59)
+                    .toISOString()
+                    .replace('T', ' '),
+                )
+                metas.set('r_abord_prospec_ativa', 0)
+                metas.set('r_vendas', 0)
+                metas.set('r_faturamento', 0)
+                metas.set('r_leads_recebidos', 0)
+                metas.set('r_apresent_consult', 0)
+                metas.set('m_leads_recebidos', 0)
+                metas.set('m_abord_prospec_ativa', 0)
+                metas.set('m_apresent_consult', 0)
+                metas.set('m_vendas', 0)
+                metas.set('m_faturamento', 0)
+              } catch (_) {}
+            }
+
+            if (metas) {
+              metas.set('r_abord_prospec_ativa', (metas.getInt('r_abord_prospec_ativa') || 0) + 1)
+              $app.saveNoValidate(metas)
+            }
+          }
+        }
+      }
+    }
+
     return e.json(200, { success: true, message: msgRecord })
   },
   $apis.requireAuth(),
