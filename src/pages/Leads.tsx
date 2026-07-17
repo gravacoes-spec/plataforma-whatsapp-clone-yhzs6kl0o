@@ -524,7 +524,8 @@ export default function Leads() {
                         </SelectItem>
                         <SelectItem value="Não tenho um plano claro para aprovação">
                           Não tenho um plano claro para aprovação
-                        <SelectItem value="Outro">Outro</SelectItem>{' '}
+                        </SelectItem>
+                        <SelectItem value="Outros motivos">Outros motivos</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
