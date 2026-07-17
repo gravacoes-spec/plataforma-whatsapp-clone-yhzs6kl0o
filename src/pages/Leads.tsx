@@ -524,12 +524,6 @@ export default function Leads() {
                         </SelectItem>
                         <SelectItem value="Não tenho um plano claro para aprovação">
                           Não tenho um plano claro para aprovação
-                        </SelectItem>
-                        <SelectItem value="Outros motivos">Outros motivos</SelectItem>
-                        <SelectItem value="Tempo">Tempo</SelectItem>
-                        <SelectItem value="Disciplina">Disciplina</SelectItem>
-                        <SelectItem value="Metodo">Método</SelectItem>
-                        <SelectItem value="Recursos">Recursos</SelectItem>
                         <SelectItem value="Outro">Outro</SelectItem>{' '}
                       </SelectContent>
                     </Select>
