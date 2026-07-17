@@ -10,6 +10,8 @@ import {
   CheckSquare,
   Contact,
   ShoppingBag,
+  TrendingUp,
+  Target,
 } from 'lucide-react'
 import { useAuth } from '@/hooks/use-auth'
 import { useEffect, useState } from 'react'
@@ -108,6 +110,7 @@ export default function Layout() {
   ]
 
   const crmNavItems = [
+    { to: '/', label: 'Dashboard Comercial (BI)', icon: TrendingUp },
     { to: '/crm/leads', label: 'Leads', icon: Contact },
     { to: '/crm/clientes', label: 'Clientes', icon: UsersRound },
     { to: '/crm/pipeline', label: 'Pipeline CRM', icon: Kanban },
@@ -115,6 +118,7 @@ export default function Layout() {
   ]
 
   if (user?.perfil_acess === 'Gestor' || user?.perfil_acess === 'Suporte') {
+    crmNavItems.push({ to: '/admin/metas', label: 'Gestão Comercial', icon: Target })
     crmNavItems.push({ to: '/admin/users', label: 'Usuários e Mentores', icon: Settings2 })
   }
 

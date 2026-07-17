@@ -31,9 +31,28 @@ import {
   Tooltip,
   XAxis,
   YAxis,
+  PieChart,
+  Pie,
+  Cell,
 } from 'recharts'
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart'
 import { subDays, isAfter, isBefore, startOfDay, endOfDay, parseISO } from 'date-fns'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog'
+import {
+  Table,
+  TableHeader,
+  TableRow,
+  TableHead,
+  TableBody,
+  TableCell,
+} from '@/components/ui/table'
+import { Input } from '@/components/ui/input'
 
 export default function Index() {
   const [leads, setLeads] = useState<LeadRecord[]>([])
@@ -43,7 +62,10 @@ export default function Index() {
 
   const [loading, setLoading] = useState(true)
   const [period, setPeriod] = useState('30')
+  const [customStart, setCustomStart] = useState('')
+  const [customEnd, setCustomEnd] = useState('')
   const [sellerId, setSellerId] = useState('todos')
+  const [lossModalOpen, setLossModalOpen] = useState(false)
 
   const loadData = async () => {
     try {
@@ -74,8 +96,11 @@ export default function Index() {
 
   const { filteredLeads, filteredVendas, filteredMetas } = useMemo(() => {
     const now = new Date()
-    const startDate = startOfDay(subDays(now, parseInt(period) || 30))
-    const endDate = endOfDay(now)
+    const startDate =
+      period === 'custom' && customStart
+        ? startOfDay(parseISO(customStart))
+        : startOfDay(subDays(now, parseInt(period) || 30))
+    const endDate = period === 'custom' && customEnd ? endOfDay(parseISO(customEnd)) : endOfDay(now)
 
     const fLeads = leads.filter((l) => {
       const d = parseISO(l.created)
@@ -135,8 +160,6 @@ export default function Index() {
       { id: '9. Follow-up', label: 'Follow-up', color: '#64748b' },
     ]
 
-    let currentTotal = filteredLeads.length
-
     return stages.map((stage, idx) => {
       const count = filteredLeads.filter((l) => l.etapa_pipeline === stage.id).length
       const width = Math.max(10, 100 - idx * 15)
@@ -175,6 +198,21 @@ export default function Index() {
     ]
   }, [filteredMetas])
 
+  const lossReasonsData = useMemo(() => {
+    const lost = filteredLeads.filter((l) => l.etapa_pipeline === '10. Lead Desqualificado/Perda')
+    const map = lost.reduce(
+      (acc, l) => {
+        const r = l.motivo_perda || 'Não informado'
+        acc[r] = (acc[r] || 0) + 1
+        return acc
+      },
+      {} as Record<string, number>,
+    )
+    return Object.entries(map).map(([name, value]) => ({ name, value }))
+  }, [filteredLeads])
+
+  const COLORS = ['#ef4444', '#f97316', '#f59e0b', '#84cc16', '#10b981', '#06b6d4', '#6366f1']
+
   if (loading) {
     return (
       <div className="flex h-full items-center justify-center bg-zinc-50">
@@ -203,8 +241,26 @@ export default function Index() {
                 <SelectItem value="7">Últimos 7 dias</SelectItem>
                 <SelectItem value="30">Últimos 30 dias</SelectItem>
                 <SelectItem value="90">Últimos 90 dias</SelectItem>
+                <SelectItem value="custom">Personalizado</SelectItem>
               </SelectContent>
             </Select>
+            {period === 'custom' && (
+              <div className="flex items-center gap-1 ml-2 border-l pl-2">
+                <Input
+                  type="date"
+                  value={customStart}
+                  onChange={(e) => setCustomStart(e.target.value)}
+                  className="h-7 text-xs w-[120px]"
+                />
+                <span className="text-zinc-400">-</span>
+                <Input
+                  type="date"
+                  value={customEnd}
+                  onChange={(e) => setCustomEnd(e.target.value)}
+                  className="h-7 text-xs w-[120px]"
+                />
+              </div>
+            )}
             <div className="w-[1px] h-4 bg-zinc-200 mx-1"></div>
             <Select value={sellerId} onValueChange={setSellerId}>
               <SelectTrigger className="w-[160px] border-0 focus:ring-0 h-8 shadow-none bg-transparent">
@@ -278,7 +334,10 @@ export default function Index() {
               <div className="text-2xl font-bold text-zinc-900">{kpis.convGeral}%</div>
             </CardContent>
           </Card>
-          <Card className="shadow-sm border-zinc-200/60">
+          <Card
+            className="shadow-sm border-zinc-200/60 cursor-pointer hover:border-red-300 transition-colors"
+            onClick={() => setLossModalOpen(true)}
+          >
             <CardHeader className="flex flex-row items-center justify-between pb-2 pt-4 px-4">
               <CardTitle className="text-[13px] font-medium text-zinc-500">
                 Análise de Perda
@@ -289,12 +348,53 @@ export default function Index() {
             </CardHeader>
             <CardContent className="px-4 pb-4">
               <div className="text-2xl font-bold text-zinc-900">{kpis.perdas}</div>
-              <p className="text-xs text-zinc-400 mt-1">Leads desqualificados</p>
+              <p className="text-xs text-zinc-400 mt-1">Clique para ver detalhes</p>
             </CardContent>
           </Card>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <Card className="shadow-sm border-zinc-200/60 flex flex-col">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg">Motivos de Perda</CardTitle>
+              <p className="text-sm text-zinc-500">Distribuição dos leads desqualificados</p>
+            </CardHeader>
+            <CardContent className="flex-1 flex flex-col justify-center py-2 h-[350px]">
+              {lossReasonsData.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={lossReasonsData}
+                      dataKey="value"
+                      nameKey="name"
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={80}
+                      paddingAngle={2}
+                    >
+                      {lossReasonsData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <RechartsTooltip
+                      contentStyle={{
+                        borderRadius: '8px',
+                        border: '1px solid #e4e4e7',
+                        fontSize: '12px',
+                      }}
+                    />
+                    <Legend wrapperStyle={{ fontSize: '12px' }} />
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex items-center justify-center h-full text-zinc-400 text-sm">
+                  Nenhuma perda no período
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           <Card className="shadow-sm border-zinc-200/60 flex flex-col">
             <CardHeader className="pb-2">
               <CardTitle className="text-lg">Funil de Vendas</CardTitle>
@@ -362,6 +462,36 @@ export default function Index() {
           </Card>
         </div>
       </div>
+
+      <Dialog open={lossModalOpen} onOpenChange={setLossModalOpen}>
+        <DialogContent className="sm:max-w-[700px]">
+          <DialogHeader>
+            <DialogTitle>Detalhamento de Perdas</DialogTitle>
+          </DialogHeader>
+          <div className="max-h-[60vh] overflow-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Lead</TableHead>
+                  <TableHead>Vendedor</TableHead>
+                  <TableHead>Motivo</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredLeads
+                  .filter((l) => l.etapa_pipeline === '10. Lead Desqualificado/Perda')
+                  .map((l) => (
+                    <TableRow key={l.id}>
+                      <TableCell className="font-medium">{l.name || 'Sem nome'}</TableCell>
+                      <TableCell>{(l as any).expand?.vend_resp?.name || '-'}</TableCell>
+                      <TableCell className="text-red-600">{l.motivo_perda || '-'}</TableCell>
+                    </TableRow>
+                  ))}
+              </TableBody>
+            </Table>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

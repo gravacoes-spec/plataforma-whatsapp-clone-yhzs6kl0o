@@ -34,6 +34,7 @@ const formSchema = z.object({
   phone: z.string().min(1, 'Telefone é obrigatório'),
   area_grad: z.string().min(1, 'Área de graduação é obrigatória'),
   concurso_alvo: z.string().min(1, 'Concurso alvo é obrigatório'),
+  tmp_acad: z.string().min(1, 'Obrigatório'),
   tmp_estudos: z.string().min(1, 'Obrigatório'),
   hrs_est_dia: z.string().min(1, 'Obrigatório'),
   maior_dif: z.string().min(1, 'Obrigatório'),
@@ -64,6 +65,7 @@ export default function Cadastro() {
       phone: '',
       area_grad: '',
       concurso_alvo: '',
+      tmp_acad: '',
       tmp_estudos: '',
       hrs_est_dia: '',
       maior_dif: '',
@@ -253,6 +255,35 @@ export default function Cadastro() {
                             {...field}
                           />
                         </FormControl>
+                        <FormMessage className="text-red-400" />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="tmp_acad"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-zinc-300">Momento Acadêmico</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger className="bg-[#09090b] border-[#27272a] text-white focus:ring-amber-500">
+                              <SelectValue placeholder="Selecione" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent className="bg-[#18181b] border-[#27272a] text-white">
+                            <SelectItem value="Formado ou últimos 3 anos">
+                              Formado ou últimos 3 anos
+                            </SelectItem>
+                            <SelectItem value="Primeiros anos da graduação">
+                              Primeiros anos da graduação
+                            </SelectItem>
+                            <SelectItem value="Sem graduação aderente">
+                              Sem graduação aderente
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
                         <FormMessage className="text-red-400" />
                       </FormItem>
                     )}

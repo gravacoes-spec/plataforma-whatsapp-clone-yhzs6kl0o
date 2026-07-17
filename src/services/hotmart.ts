@@ -10,3 +10,14 @@ export const getVendasByLead = async (leadId: string) => {
     sort: '-created',
   })
 }
+
+export const getVendasByLeadAndEmail = async (leadId: string, email?: string) => {
+  const parts = []
+  if (leadId) parts.push(`lead_id = "${leadId}"`)
+  if (email) parts.push(`email_comprador = "${email}"`)
+  if (parts.length === 0) return []
+  return await pb.collection('vendas_hotmart').getFullList({
+    filter: parts.join(' || '),
+    sort: '-created',
+  })
+}

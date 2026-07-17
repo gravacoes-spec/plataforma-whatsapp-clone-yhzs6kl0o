@@ -24,7 +24,8 @@ import {
 } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
-import { getVendasByLead } from '@/services/hotmart'
+import { getVendasByLeadAndEmail } from '@/services/hotmart'
+import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { format, parseISO } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
@@ -60,16 +61,17 @@ export default function CrmPipeline() {
   const [pendingDrop, setPendingDrop] = useState<{ leadId: string; columnId: string } | null>(null)
   const [lossReason, setLossReason] = useState('')
   const [leadVendas, setLeadVendas] = useState<any[]>([])
+  const navigate = useNavigate()
 
   useEffect(() => {
-    if (selectedLead?.id) {
-      getVendasByLead(selectedLead.id)
+    if (selectedLead?.id || selectedLead?.email) {
+      getVendasByLeadAndEmail(selectedLead.id || '', selectedLead.email || '')
         .then(setLeadVendas)
         .catch(() => setLeadVendas([]))
     } else {
       setLeadVendas([])
     }
-  }, [selectedLead?.id])
+  }, [selectedLead?.id, selectedLead?.email])
 
   const loadData = async () => {
     try {
@@ -415,13 +417,13 @@ export default function CrmPipeline() {
                   </div>
                 )}
 
-                {selectedLead.tags && (
+                {selectedLead.historico_notas && (
                   <div className="space-y-3">
                     <h4 className="text-[11px] font-bold tracking-wider text-zinc-400 uppercase">
                       Tags
                     </h4>
                     <div className="flex flex-wrap gap-2">
-                      {selectedLead.tags.split(',').map((tag) => (
+                      {selectedLead.historico_notas.split(',').map((tag) => (
                         <span
                           key={tag}
                           className="text-[12px] font-medium text-zinc-700 bg-zinc-100 border border-zinc-200 px-2.5 py-1 rounded-md"
@@ -432,6 +434,29 @@ export default function CrmPipeline() {
                     </div>
                   </div>
                 )}
+              </div>
+
+              <div className="flex gap-2 p-4 border-t border-zinc-100 bg-zinc-50 mt-auto">
+                <Button
+                  variant="outline"
+                  onClick={() => navigate('/crm/leads')}
+                  className="flex-1 text-xs"
+                >
+                  Editar Lead
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => navigate('/crm/tasks?lead=' + selectedLead.id)}
+                  className="flex-1 text-xs"
+                >
+                  Adicionar Tarefas
+                </Button>
+                <Button
+                  onClick={() => navigate('/inbox?phone=' + selectedLead.phone)}
+                  className="flex-1 text-xs bg-emerald-500 hover:bg-emerald-600 text-white"
+                >
+                  Chat WhatsApp
+                </Button>
               </div>
             </div>
           )}

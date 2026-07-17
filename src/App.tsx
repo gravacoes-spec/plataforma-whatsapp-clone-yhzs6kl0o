@@ -15,6 +15,7 @@ import Leads from './pages/Leads'
 import Clientes from './pages/Clientes'
 import Tasks from './pages/Tasks'
 import Users from './pages/Users'
+import GestaoComercial from './pages/GestaoComercial'
 import CrmPipeline from './pages/CrmPipeline'
 import NotFound from './pages/NotFound'
 import Cadastro from './pages/Cadastro'
@@ -40,6 +41,7 @@ const App = () => (
             <Route path="/crm/clientes" element={<Clientes />} />
             <Route path="/crm/pipeline" element={<CrmPipeline />} />
             <Route path="/crm/tasks" element={<Tasks />} />
+            <Route path="/admin/metas" element={<GestaoComercial />} />
             <Route path="/admin/users" element={<Users />} />
             <Route path="/hotmart" element={<HotmartLogs />} />
           </Route>

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { getLeads, updateLead, createLead, deleteLead, LeadRecord } from '@/services/leads'
 import { getUsers } from '@/services/users'
-import { getVendasByLead } from '@/services/hotmart'
+import { getVendasByLeadAndEmail } from '@/services/hotmart'
 import { useRealtime } from '@/hooks/use-realtime'
 import { Plus, Search, Loader2, Pencil, Trash2, SlidersHorizontal, ShoppingBag } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -99,14 +99,14 @@ export default function Leads() {
   }, [search, leads])
 
   useEffect(() => {
-    if (editingLead?.id) {
-      getVendasByLead(editingLead.id)
+    if (editingLead?.id || editingLead?.email) {
+      getVendasByLeadAndEmail(editingLead.id || '', editingLead.email || '')
         .then(setLeadVendas)
         .catch(() => setLeadVendas([]))
     } else {
       setLeadVendas([])
     }
-  }, [editingLead?.id])
+  }, [editingLead?.id, editingLead?.email])
 
   const handleOpenModal = (lead: Partial<LeadRecord> | null = null) => {
     setEditingLead(
@@ -376,6 +376,16 @@ export default function Leads() {
                         <SelectItem value="Ainda avaliando">Ainda avaliando</SelectItem>
                       </SelectContent>
                     </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Tags / Histórico (Notas)</Label>
+                    <Input
+                      value={editingLead.historico_notas || ''}
+                      onChange={(e) =>
+                        setEditingLead({ ...editingLead, historico_notas: e.target.value })
+                      }
+                      placeholder="Ex: #quente, #prioridade..."
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label>Motivo Perda</Label>

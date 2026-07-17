@@ -8,7 +8,12 @@ import {
 } from '@/services/bd-clientes'
 import { getLeads, LeadRecord } from '@/services/leads'
 import { getUsers } from '@/services/users'
-import { getVendasByLead } from '@/services/hotmart'
+import { getVendasByLeadAndEmail } from '@/services/hotmart'
+import {
+  getMentoriaPeriodos,
+  createMentoriaPeriodo,
+  MentoriaPeriodoRecord,
+} from '@/services/mentoria_periodos'
 import { useRealtime } from '@/hooks/use-realtime'
 import { useAuth } from '@/hooks/use-auth'
 import {
@@ -68,6 +73,7 @@ export default function Clientes() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingCliente, setEditingCliente] = useState<Partial<BdClienteRecord> | null>(null)
   const [leadVendas, setLeadVendas] = useState<any[]>([])
+  const [mentoriaHistory, setMentoriaHistory] = useState<MentoriaPeriodoRecord[]>([])
 
   const loadData = async () => {
     try {
@@ -106,14 +112,44 @@ export default function Clientes() {
   }, [search, clientes])
 
   useEffect(() => {
-    if (editingCliente?.Vend_Resp_Lead) {
-      getVendasByLead(editingCliente.Vend_Resp_Lead)
+    if (editingCliente?.Vend_Resp_Lead || editingCliente?.email) {
+      getVendasByLeadAndEmail(editingCliente.Vend_Resp_Lead || '', editingCliente.email || '')
         .then(setLeadVendas)
         .catch(() => setLeadVendas([]))
     } else {
       setLeadVendas([])
     }
-  }, [editingCliente?.Vend_Resp_Lead])
+
+    if (editingCliente?.id) {
+      getMentoriaPeriodos(editingCliente.id)
+        .then(setMentoriaHistory)
+        .catch(() => setMentoriaHistory([]))
+    }
+  }, [editingCliente?.id, editingCliente?.Vend_Resp_Lead, editingCliente?.email])
+
+  const saveToHistory = async () => {
+    if (!editingCliente?.id) return
+    try {
+      await createMentoriaPeriodo({
+        client_id: editingCliente.id,
+        start_date: editingCliente.Data_inicio,
+        end_date: editingCliente.Data_term,
+        renewal_info: editingCliente.Renov,
+        mentor_id: editingCliente.Mentor_a,
+      })
+      toast.success('Período salvo no histórico')
+      getMentoriaPeriodos(editingCliente.id).then(setMentoriaHistory)
+      // Clear active fields
+      setEditingCliente({
+        ...editingCliente,
+        Data_inicio: '',
+        Data_term: '',
+        Renov: '',
+      })
+    } catch {
+      toast.error('Erro ao salvar histórico')
+    }
+  }
 
   const handleOpenModal = (cliente: Partial<BdClienteRecord>) => {
     setEditingCliente({ ...cliente })
@@ -434,70 +470,123 @@ export default function Clientes() {
                   </div>
                 </TabsContent>
 
-                <TabsContent value="mentoria" className="space-y-4 mt-0">
-                  <div className="space-y-2">
-                    <Label>Mentor(a) Atribuído(a)</Label>
-                    <Select
-                      value={editingCliente.Mentor_a || ''}
-                      onValueChange={(v) => setEditingCliente({ ...editingCliente, Mentor_a: v })}
+                <TabsContent value="mentoria" className="space-y-6 mt-0">
+                  <div className="space-y-4 border border-violet-100 bg-violet-50/30 p-4 rounded-xl">
+                    <h3 className="font-semibold text-violet-800 text-sm">Período Ativo</h3>
+                    <div className="space-y-2">
+                      <Label>Mentor(a) Atribuído(a)</Label>
+                      <Select
+                        value={editingCliente.Mentor_a || ''}
+                        onValueChange={(v) => setEditingCliente({ ...editingCliente, Mentor_a: v })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione um mentor(a)" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {mentors.map((m) => (
+                            <SelectItem key={m.id} value={m.id}>
+                              {m.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Data de Início</Label>
+                        <Input
+                          type="date"
+                          value={
+                            editingCliente.Data_inicio
+                              ? editingCliente.Data_inicio.substring(0, 10)
+                              : ''
+                          }
+                          onChange={(e) =>
+                            setEditingCliente({
+                              ...editingCliente,
+                              Data_inicio: e.target.value
+                                ? new Date(e.target.value).toISOString()
+                                : '',
+                            })
+                          }
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Data de Término</Label>
+                        <Input
+                          type="date"
+                          value={
+                            editingCliente.Data_term
+                              ? editingCliente.Data_term.substring(0, 10)
+                              : ''
+                          }
+                          onChange={(e) =>
+                            setEditingCliente({
+                              ...editingCliente,
+                              Data_term: e.target.value
+                                ? new Date(e.target.value).toISOString()
+                                : '',
+                            })
+                          }
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Renovação</Label>
+                      <Input
+                        value={editingCliente.Renov || ''}
+                        onChange={(e) =>
+                          setEditingCliente({ ...editingCliente, Renov: e.target.value })
+                        }
+                        placeholder="Status de renovação (Ex: Renovado, Em negociação...)"
+                      />
+                    </div>
+                    <Button
+                      onClick={saveToHistory}
+                      variant="outline"
+                      className="w-full text-violet-700 hover:text-violet-800 border-violet-200 hover:bg-violet-100"
                     >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione um mentor(a)" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {mentors.map((m) => (
-                          <SelectItem key={m.id} value={m.id}>
-                            {m.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      Arquivar no Histórico
+                    </Button>
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>Data de Início</Label>
-                      <Input
-                        type="date"
-                        value={
-                          editingCliente.Data_inicio
-                            ? editingCliente.Data_inicio.substring(0, 10)
-                            : ''
-                        }
-                        onChange={(e) =>
-                          setEditingCliente({
-                            ...editingCliente,
-                            Data_inicio: e.target.value
-                              ? new Date(e.target.value).toISOString()
-                              : '',
-                          })
-                        }
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Data de Término</Label>
-                      <Input
-                        type="date"
-                        value={
-                          editingCliente.Data_term ? editingCliente.Data_term.substring(0, 10) : ''
-                        }
-                        onChange={(e) =>
-                          setEditingCliente({
-                            ...editingCliente,
-                            Data_term: e.target.value ? new Date(e.target.value).toISOString() : '',
-                          })
-                        }
-                      />
-                    </div>
-                  </div>
+
                   <div className="space-y-2">
-                    <Label>Renovação</Label>
-                    <Input
-                      value={editingCliente.Renov || ''}
-                      onChange={(e) =>
-                        setEditingCliente({ ...editingCliente, Renov: e.target.value })
-                      }
-                      placeholder="Status de renovação (Ex: Renovado, Em negociação...)"
-                    />
+                    <h3 className="font-semibold text-zinc-800 text-sm">Histórico de Mentorias</h3>
+                    <div className="border border-zinc-200 rounded-lg overflow-hidden">
+                      <Table>
+                        <TableHeader className="bg-zinc-50">
+                          <TableRow>
+                            <TableHead>Mentor</TableHead>
+                            <TableHead>Início</TableHead>
+                            <TableHead>Fim</TableHead>
+                            <TableHead>Renovação</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {mentoriaHistory.map((h) => (
+                            <TableRow key={h.id}>
+                              <TableCell>
+                                {users.find((u) => u.id === h.mentor_id)?.name || '-'}
+                              </TableCell>
+                              <TableCell>
+                                {h.start_date ? format(parseISO(h.start_date), 'dd/MM/yyyy') : '-'}
+                              </TableCell>
+                              <TableCell>
+                                {h.end_date ? format(parseISO(h.end_date), 'dd/MM/yyyy') : '-'}
+                              </TableCell>
+                              <TableCell>{h.renewal_info || '-'}</TableCell>
+                            </TableRow>
+                          ))}
+                          {mentoriaHistory.length === 0 && (
+                            <TableRow>
+                              <TableCell colSpan={4} className="text-center text-zinc-500 py-4">
+                                Nenhum histórico
+                              </TableCell>
+                            </TableRow>
+                          )}
+                        </TableBody>
+                      </Table>
+                    </div>
                   </div>
                 </TabsContent>
               </div>
