@@ -398,8 +398,8 @@ export default function Cadastro() {
                             <SelectItem value="Não consigo evoluir nas questões/simulados">
                               Não consigo evoluir nas questões/simulados
                             </SelectItem>
-                            <SelectItem value="Não tenho um plano claro para abravação">
-                              Não tenho um plano claro para abravação
+                            <SelectItem value="Não tenho um plano claro para aprovação">
+                              Não tenho um plano claro para aprovação
                             </SelectItem>
                             <SelectItem value="Outros motivos">Outros motivos</SelectItem>
                           </SelectContent>
