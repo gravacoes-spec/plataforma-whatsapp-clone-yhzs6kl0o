@@ -49,7 +49,7 @@ export default function HotmartLogs() {
     loadLogs()
   }, [loadLogs, authLoading])
 
-  useRealtime('webhook_log', () => loadLogs(), isAuthenticated && !authLoading)
+  useRealtime('webhook_log', () => loadLogs(), isAuthenticated && !authLoading && !loading)
 
   const handleImportCsv = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
