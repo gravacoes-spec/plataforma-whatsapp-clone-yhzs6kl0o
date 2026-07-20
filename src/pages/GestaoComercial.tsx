@@ -120,6 +120,11 @@ export default function GestaoComercial() {
         r_apresent_consult: 0,
         r_vendas: 0,
         r_faturamento: 0,
+        ajuste_vendas: 0,
+        ajuste_faturamento: 0,
+        ajuste_leads: 0,
+        ajuste_abordagens: 0,
+        ajuste_consultorias: 0,
       },
     )
     setIsModalOpen(true)
@@ -211,10 +216,23 @@ export default function GestaoComercial() {
                     {m.periodo_fin ? format(parseISO(m.periodo_fin), 'dd/MM/yyyy') : ''}
                   </TableCell>
                   <TableCell>{m.m_vendas || 0}</TableCell>
-                  <TableCell className="font-medium text-emerald-600">{m.calc_vendas}</TableCell>
+                  <TableCell className="font-medium text-emerald-600">
+                    <div>{m.calc_vendas + (m.ajuste_vendas || 0)}</div>
+                    {(m.ajuste_vendas || 0) !== 0 && (
+                      <div className="text-[10px] text-zinc-400">
+                        Auto: {m.calc_vendas} | Manual: {m.ajuste_vendas || 0}
+                      </div>
+                    )}
+                  </TableCell>
                   <TableCell>R$ {m.m_faturamento?.toFixed(2) || '0.00'}</TableCell>
                   <TableCell className="font-medium text-emerald-600">
-                    R$ {m.calc_fatur.toFixed(2)}
+                    <div>R$ {(m.calc_fatur + (m.ajuste_faturamento || 0)).toFixed(2)}</div>
+                    {(m.ajuste_faturamento || 0) !== 0 && (
+                      <div className="text-[10px] text-zinc-400">
+                        Auto: R$ {m.calc_fatur.toFixed(2)} | Manual: R${' '}
+                        {(m.ajuste_faturamento || 0).toFixed(2)}
+                      </div>
+                    )}
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-2">
@@ -421,6 +439,73 @@ export default function GestaoComercial() {
               </div>
             </div>
           </div>
+
+          {user?.perfil_acess === 'Gestor' && (
+            <div className="border-t border-zinc-200 my-2 pt-4 px-1">
+              <h3 className="text-sm font-bold text-zinc-700 mb-1">Ajustes Manuais (Gestor)</h3>
+              <p className="text-[11px] text-zinc-400 mb-3">
+                Valores manuais somados aos realizados automáticos.
+              </p>
+              <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+                <div className="space-y-2">
+                  <Label className="text-zinc-700">Ajuste: Leads</Label>
+                  <Input
+                    type="number"
+                    value={editingMeta?.ajuste_leads || 0}
+                    onChange={(e) =>
+                      setEditingMeta({ ...editingMeta, ajuste_leads: Number(e.target.value) })
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-zinc-700">Ajuste: Abordagens</Label>
+                  <Input
+                    type="number"
+                    value={editingMeta?.ajuste_abordagens || 0}
+                    onChange={(e) =>
+                      setEditingMeta({ ...editingMeta, ajuste_abordagens: Number(e.target.value) })
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-zinc-700">Ajuste: Consultorias</Label>
+                  <Input
+                    type="number"
+                    value={editingMeta?.ajuste_consultorias || 0}
+                    onChange={(e) =>
+                      setEditingMeta({
+                        ...editingMeta,
+                        ajuste_consultorias: Number(e.target.value),
+                      })
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-zinc-700">Ajuste: Vendas</Label>
+                  <Input
+                    type="number"
+                    value={editingMeta?.ajuste_vendas || 0}
+                    onChange={(e) =>
+                      setEditingMeta({ ...editingMeta, ajuste_vendas: Number(e.target.value) })
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-zinc-700">Ajuste: Faturamento</Label>
+                  <Input
+                    type="number"
+                    value={editingMeta?.ajuste_faturamento || 0}
+                    onChange={(e) =>
+                      setEditingMeta({
+                        ...editingMeta,
+                        ajuste_faturamento: Number(e.target.value),
+                      })
+                    }
+                  />
+                </div>
+              </div>
+            </div>
+          )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsModalOpen(false)}>
               Cancelar

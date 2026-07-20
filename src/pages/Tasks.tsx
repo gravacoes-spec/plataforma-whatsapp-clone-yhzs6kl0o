@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { getTasks, updateTask, createTask, deleteTask } from '@/services/tasks'
+import { getLeads, LeadRecord } from '@/services/leads'
 import { useRealtime } from '@/hooks/use-realtime'
 import { useAuth } from '@/hooks/use-auth'
 import {
@@ -28,25 +30,47 @@ import {
   AlertTriangle,
   ChevronLeft,
   ChevronRight,
+  Trash2,
+  Star,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { PageHeader } from '@/components/ui/page-header'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { cn } from '@/lib/utils'
+import { toast } from 'sonner'
 
 export default function Tasks() {
   const { user } = useAuth()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [tasks, setTasks] = useState<any[]>([])
+  const [leads, setLeads] = useState<LeadRecord[]>([])
   const [loading, setLoading] = useState(true)
   const [view, setView] = useState<'list' | 'calendar'>('list')
-  const [filter, setFilter] = useState<'all' | 'late'>('all')
-  const [roleFilter, setRoleFilter] = useState<'vendedor' | 'mentor'>('vendedor')
+  const [filter, setFilter] = useState<'all' | 'late' | 'premium'>('all')
   const [currentMonth, setCurrentMonth] = useState(new Date())
+  const [isCreateOpen, setIsCreateOpen] = useState(false)
+  const [newTask, setNewTask] = useState({ description: '', due_date: '', lead_id: '' })
 
   const loadData = async () => {
     try {
-      const data = await getTasks()
-      setTasks(data)
+      const [taskData, leadData] = await Promise.all([getTasks(), getLeads()])
+      setTasks(taskData)
+      setLeads(leadData)
     } catch (e) {
       console.error(e)
     } finally {
@@ -56,10 +80,14 @@ export default function Tasks() {
 
   useEffect(() => {
     loadData()
+    const leadParam = searchParams.get('lead')
+    if (leadParam) {
+      setNewTask((prev) => ({ ...prev, lead_id: leadParam }))
+      setIsCreateOpen(true)
+    }
   }, [])
 
   useRealtime('tasks', () => loadData())
-  useRealtime('whatsapp_instances', () => loadData())
   useRealtime('Leads', () => loadData())
 
   const toggleTask = async (task: any) => {
@@ -73,6 +101,45 @@ export default function Tasks() {
     }
   }
 
+  const handleDeleteTask = async (taskId: string) => {
+    try {
+      setTasks((prev) => prev.filter((t) => t.id !== taskId))
+      await deleteTask(taskId)
+      toast.success('Tarefa excluída')
+    } catch {
+      loadData()
+      toast.error('Erro ao excluir')
+    }
+  }
+
+  const handleCreateTask = async () => {
+    if (!newTask.description.trim()) {
+      toast.error('Descrição é obrigatória')
+      return
+    }
+    try {
+      const payload: any = {
+        description: newTask.description,
+        due_date: newTask.due_date ? new Date(newTask.due_date).toISOString() : '',
+        completed: false,
+        user_id: user?.id,
+      }
+      if (newTask.lead_id) {
+        payload.lead_id = newTask.lead_id
+      }
+      await createTask(payload)
+      toast.success('Tarefa criada')
+      setIsCreateOpen(false)
+      setNewTask({ description: '', due_date: '', lead_id: '' })
+      const newParams = new URLSearchParams(searchParams)
+      newParams.delete('lead')
+      setSearchParams(newParams)
+      loadData()
+    } catch {
+      toast.error('Erro ao criar tarefa')
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex h-full items-center justify-center">
@@ -82,14 +149,24 @@ export default function Tasks() {
   }
 
   const filteredTasks = tasks.filter((t) => {
+    if (t.user_id !== user?.id) return false
+
     if (filter === 'late' && (t.completed || !t.due_date || !isPast(parseISO(t.due_date))))
       return false
 
-    if (roleFilter === 'vendedor') {
-      return !t.mentor_id
-    } else {
-      return !!t.mentor_id
+    if (filter === 'premium') {
+      const leadId = t.lead_id
+      if (!leadId) return false
+      const lead = leads.find((l) => l.id === leadId)
+      if (!lead) return false
+      if (
+        lead.etapa_pipeline !== '3. Lead Premium' &&
+        lead.etapa_pipeline !== '4. Lead Qualificado'
+      )
+        return false
     }
+
+    return true
   })
 
   const lateCount = tasks.filter(
@@ -108,7 +185,7 @@ export default function Tasks() {
         return (
           <div
             key={t.id}
-            className="flex items-center gap-4 p-4 bg-white rounded-xl border border-zinc-200/60 shadow-sm transition-all hover:shadow-md"
+            className="group flex items-center gap-4 p-4 bg-white rounded-xl border border-zinc-200/60 shadow-sm transition-all hover:shadow-md"
           >
             <button
               onClick={() => toggleTask(t)}
@@ -153,6 +230,12 @@ export default function Tasks() {
                 )}
               </div>
             </div>
+            <button
+              onClick={() => handleDeleteTask(t.id)}
+              className="shrink-0 text-zinc-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
+            >
+              <Trash2 className="h-5 w-5" />
+            </button>
           </div>
         )
       })}
@@ -205,7 +288,7 @@ export default function Tasks() {
           ))}
         </div>
         <div className="grid grid-cols-7 flex-1 auto-rows-fr">
-          {days.map((day, i) => {
+          {days.map((day) => {
             const dayTasks = filteredTasks.filter(
               (t) => t.due_date && isSameDay(parseISO(t.due_date), day),
             )
@@ -267,7 +350,22 @@ export default function Tasks() {
           >
             <AlertTriangle className="h-4 w-4 mr-2" /> Atrasadas ({lateCount})
           </Button>
-
+          <Button
+            variant={filter === 'premium' ? 'default' : 'outline'}
+            onClick={() => setFilter(filter === 'premium' ? 'all' : 'premium')}
+            className={cn(
+              filter === 'premium' && 'bg-violet-500 hover:bg-violet-600 text-white',
+              filter !== 'premium' && 'bg-white text-zinc-700',
+            )}
+          >
+            <Star className="h-4 w-4 mr-2" /> Premium/Qualificado
+          </Button>
+          <Button
+            onClick={() => setIsCreateOpen(true)}
+            className="bg-emerald-500 hover:bg-emerald-600 text-white"
+          >
+            <Plus className="h-4 w-4 mr-2" /> Nova Tarefa
+          </Button>
           <ToggleGroup
             type="single"
             value={view}
@@ -287,29 +385,62 @@ export default function Tasks() {
         </div>
       </div>
 
-      <div className="px-8 pb-4">
-        <ToggleGroup
-          type="single"
-          value={roleFilter}
-          onValueChange={(v) => v && setRoleFilter(v as 'vendedor' | 'mentor')}
-          className="justify-start"
-        >
-          <ToggleGroupItem
-            value="vendedor"
-            className="h-8 px-4 text-xs rounded-full data-[state=on]:bg-violet-100 data-[state=on]:text-violet-700 border border-transparent data-[state=off]:border-zinc-200 data-[state=off]:bg-white"
-          >
-            Vendedor
-          </ToggleGroupItem>
-          <ToggleGroupItem
-            value="mentor"
-            className="h-8 px-4 text-xs rounded-full data-[state=on]:bg-violet-100 data-[state=on]:text-violet-700 border border-transparent data-[state=off]:border-zinc-200 data-[state=off]:bg-white"
-          >
-            Mentor(a)
-          </ToggleGroupItem>
-        </ToggleGroup>
-      </div>
-
       <div className="px-8 pb-8 flex-1">{view === 'list' ? renderList() : renderCalendar()}</div>
+
+      <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Nova Tarefa</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Descrição</Label>
+              <Input
+                value={newTask.description}
+                onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
+                placeholder="Descrição da tarefa"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Data de Vencimento</Label>
+              <Input
+                type="date"
+                value={newTask.due_date}
+                onChange={(e) => setNewTask({ ...newTask, due_date: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Lead Relacionado</Label>
+              <Select
+                value={newTask.lead_id}
+                onValueChange={(v) => setNewTask({ ...newTask, lead_id: v })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione um lead (opcional)" />
+                </SelectTrigger>
+                <SelectContent>
+                  {leads.map((l) => (
+                    <SelectItem key={l.id} value={l.id}>
+                      {l.name || 'Sem nome'}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsCreateOpen(false)}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleCreateTask}
+              className="bg-emerald-500 hover:bg-emerald-600 text-white"
+            >
+              Criar Tarefa
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

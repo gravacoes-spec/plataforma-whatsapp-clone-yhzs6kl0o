@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { getWebhookLogs } from '@/services/hotmart'
 import { PageHeader } from '@/components/ui/page-header'
 import {
@@ -11,8 +11,10 @@ import {
 } from '@/components/ui/table'
 import { format, parseISO } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import { Loader2, Eye } from 'lucide-react'
+import { Loader2, Eye, Upload } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { toast } from 'sonner'
+import { importHotmartCsv } from '@/services/hotmart-import'
 import {
   Dialog,
   DialogContent,
@@ -26,6 +28,8 @@ import { useAuth } from '@/hooks/use-auth'
 export default function HotmartLogs() {
   const [logs, setLogs] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [importing, setImporting] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const { isAuthenticated, loading: authLoading } = useAuth()
 
   const loadLogs = useCallback(async () => {
@@ -47,6 +51,26 @@ export default function HotmartLogs() {
 
   useRealtime('webhook_log', () => loadLogs(), isAuthenticated && !authLoading)
 
+  const handleImportCsv = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setImporting(true)
+    try {
+      const text = await file.text()
+      const result = await importHotmartCsv(text)
+      toast.success(
+        `${result.imported} registros importados, ${result.clientesSynced} clientes sincronizados!`,
+      )
+      loadLogs()
+    } catch (err) {
+      toast.error('Erro ao importar CSV')
+      console.error(err)
+    } finally {
+      setImporting(false)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex h-full items-center justify-center">
@@ -62,6 +86,27 @@ export default function HotmartLogs() {
         description="Últimas 10 notificações recebidas"
       />
       <div className="px-8 pb-8 flex-1 flex flex-col">
+        <div className="flex justify-end mb-4">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".csv"
+            className="hidden"
+            onChange={handleImportCsv}
+          />
+          <Button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={importing}
+            className="bg-emerald-500 hover:bg-emerald-600 text-white"
+          >
+            {importing ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <Upload className="h-4 w-4 mr-2" />
+            )}
+            Importar CSV
+          </Button>
+        </div>
         <div className="bg-white rounded-xl border border-zinc-200/60 overflow-hidden shadow-sm flex-1">
           <Table>
             <TableHeader>

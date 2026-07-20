@@ -15,6 +15,11 @@ export interface MetaRecord {
   r_apresent_consult: number
   r_vendas: number
   r_faturamento: number
+  ajuste_vendas: number
+  ajuste_faturamento: number
+  ajuste_leads: number
+  ajuste_abordagens: number
+  ajuste_consultorias: number
   created: string
   updated: string
 }

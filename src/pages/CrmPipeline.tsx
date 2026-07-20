@@ -439,7 +439,7 @@ export default function CrmPipeline() {
               <div className="flex gap-2 p-4 border-t border-zinc-100 bg-zinc-50 mt-auto">
                 <Button
                   variant="outline"
-                  onClick={() => navigate('/crm/leads')}
+                  onClick={() => navigate('/crm/leads?lead=' + selectedLead.id)}
                   className="flex-1 text-xs"
                 >
                   Editar Lead

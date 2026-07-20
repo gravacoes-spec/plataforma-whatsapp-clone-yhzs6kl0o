@@ -9,10 +9,9 @@ import pb from '@/lib/pocketbase/client'
  * Uses the per-listener UnsubscribeFunc so multiple components
  * can safely subscribe to the same collection without conflicts.
  *
- * Includes defensive checks to prevent "Invalid realtime client" errors:
- * - Validates auth store before subscribing
- * - Wraps subscribe in try/catch for transient failures
- * - Guards unsubscribe against expired/invalid clientId
+ * Generic over the record type: pass your collection's interface as
+ * `useRealtime<MyRecord>(...)` to get a typed subscription payload
+ * instead of `unknown`.
  */
 export function useRealtime<TRecord extends RecordModel = RecordModel>(
   collectionName: string,
@@ -24,47 +23,27 @@ export function useRealtime<TRecord extends RecordModel = RecordModel>(
 
   useEffect(() => {
     if (!enabled) return
-    if (!pb.authStore.isValid) return
 
     let unsubscribeFn: (() => Promise<void>) | undefined
     let cancelled = false
 
-    const subscribe = async () => {
-      try {
-        const fn = await pb.collection<TRecord>(collectionName).subscribe('*', (e) => {
-          if (!cancelled) {
-            callbackRef.current(e)
-          }
-        })
+    pb.collection<TRecord>(collectionName)
+      .subscribe('*', (e) => {
+        callbackRef.current(e)
+      })
+      .then((fn) => {
         if (cancelled) {
-          try {
-            await fn()
-          } catch {
-            // ignore — already cancelled
-          }
+          fn().catch(() => {})
         } else {
           unsubscribeFn = fn
         }
-      } catch {
-        // Transient connection failure — silently skip
-        // The next remount or auth change will retry
-      }
-    }
-
-    subscribe()
+      })
+      .catch(() => {})
 
     return () => {
       cancelled = true
       if (unsubscribeFn) {
-        try {
-          unsubscribeFn().catch(() => {
-            // Suppress "Invalid realtime client" or any
-            // expired-clientId errors during cleanup
-          })
-        } catch {
-          // Synchronous throw during unsubscribe — swallow
-        }
-        unsubscribeFn = undefined
+        unsubscribeFn().catch(() => {})
       }
     }
   }, [collectionName, enabled])

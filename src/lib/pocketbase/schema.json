@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-20T12:38:47.469Z",
+  "generatedAt": "2026-07-20T18:47:56.019Z",
   "collections": [
     {
       "name": "users",
@@ -708,6 +708,36 @@
           "required": false,
           "system": false,
           "collectionRef": "users"
+        },
+        {
+          "name": "ajuste_vendas",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "ajuste_faturamento",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "ajuste_leads",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "ajuste_abordagens",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "ajuste_consultorias",
+          "type": "number",
+          "required": false,
+          "system": false
         }
       ],
       "indexes": []
