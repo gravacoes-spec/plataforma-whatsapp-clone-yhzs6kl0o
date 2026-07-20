@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { getWebhookLogs } from '@/services/hotmart'
 import { PageHeader } from '@/components/ui/page-header'
 import {
@@ -21,12 +21,15 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { useRealtime } from '@/hooks/use-realtime'
+import { useAuth } from '@/hooks/use-auth'
 
 export default function HotmartLogs() {
   const [logs, setLogs] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const { isAuthenticated, loading: authLoading } = useAuth()
 
-  const loadLogs = async () => {
+  const loadLogs = useCallback(async () => {
+    if (!isAuthenticated) return
     try {
       const data = await getWebhookLogs()
       setLogs(data.items)
@@ -35,13 +38,14 @@ export default function HotmartLogs() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [isAuthenticated])
 
   useEffect(() => {
+    if (authLoading) return
     loadLogs()
-  }, [])
+  }, [loadLogs, authLoading])
 
-  useRealtime('webhook_log', () => loadLogs())
+  useRealtime('webhook_log', () => loadLogs(), isAuthenticated && !authLoading)
 
   if (loading) {
     return (
