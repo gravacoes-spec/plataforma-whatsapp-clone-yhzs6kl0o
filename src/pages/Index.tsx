@@ -377,7 +377,7 @@ export default function Index() {
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                       ))}
                     </Pie>
-                    <RechartsTooltip
+                    <Tooltip
                       contentStyle={{
                         borderRadius: '8px',
                         border: '1px solid #e4e4e7',
