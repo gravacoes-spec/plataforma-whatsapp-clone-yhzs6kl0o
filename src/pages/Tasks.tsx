@@ -32,6 +32,7 @@ import {
   ChevronRight,
   Trash2,
   Star,
+  Pencil,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -64,7 +65,7 @@ export default function Tasks() {
   const [filter, setFilter] = useState<'all' | 'late' | 'premium'>('all')
   const [currentMonth, setCurrentMonth] = useState(new Date())
   const [isCreateOpen, setIsCreateOpen] = useState(false)
-  const [newTask, setNewTask] = useState({ description: '', due_date: '', lead_id: '' })
+  const [newTask, setNewTask] = useState({ id: '', description: '', due_date: '', lead_id: '' })
 
   const loadData = async () => {
     try {
@@ -121,23 +122,38 @@ export default function Tasks() {
       const payload: any = {
         description: newTask.description,
         due_date: newTask.due_date ? new Date(newTask.due_date).toISOString() : '',
-        completed: false,
         user_id: user?.id,
       }
       if (newTask.lead_id) {
         payload.lead_id = newTask.lead_id
       }
-      await createTask(payload)
-      toast.success('Tarefa criada')
+      if (newTask.id) {
+        await updateTask(newTask.id, payload)
+        toast.success('Tarefa atualizada')
+      } else {
+        payload.completed = false
+        await createTask(payload)
+        toast.success('Tarefa criada')
+      }
       setIsCreateOpen(false)
-      setNewTask({ description: '', due_date: '', lead_id: '' })
+      setNewTask({ id: '', description: '', due_date: '', lead_id: '' })
       const newParams = new URLSearchParams(searchParams)
       newParams.delete('lead')
       setSearchParams(newParams)
       loadData()
     } catch {
-      toast.error('Erro ao criar tarefa')
+      toast.error('Erro ao salvar tarefa')
     }
+  }
+
+  const handleEditTask = (task: any) => {
+    setNewTask({
+      id: task.id,
+      description: task.description || '',
+      due_date: task.due_date ? task.due_date.substring(0, 10) : '',
+      lead_id: task.lead_id || '',
+    })
+    setIsCreateOpen(true)
   }
 
   if (loading) {
@@ -230,12 +246,28 @@ export default function Tasks() {
                 )}
               </div>
             </div>
-            <button
-              onClick={() => handleDeleteTask(t.id)}
-              className="shrink-0 text-zinc-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
-            >
-              <Trash2 className="h-5 w-5" />
-            </button>
+            <div className="shrink-0 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  handleEditTask(t)
+                }}
+                className="p-1.5 text-zinc-300 hover:text-violet-500 hover:bg-violet-50 rounded-md transition-colors"
+                title="Editar"
+              >
+                <Pencil className="h-4 w-4" />
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  handleDeleteTask(t.id)
+                }}
+                className="p-1.5 text-zinc-300 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors"
+                title="Excluir"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </div>
           </div>
         )
       })}
@@ -312,7 +344,7 @@ export default function Tasks() {
                   <div
                     key={t.id}
                     className={cn(
-                      'text-[10px] px-1.5 py-1 rounded border truncate cursor-pointer transition-colors',
+                      'group/cal-task relative text-[10px] px-1.5 py-1 rounded border truncate cursor-pointer transition-colors',
                       t.completed
                         ? 'bg-zinc-50 text-zinc-400 border-zinc-200 line-through'
                         : isPast(day) && !isToday(day)
@@ -322,6 +354,26 @@ export default function Tasks() {
                     onClick={() => toggleTask(t)}
                   >
                     {t.description}
+                    <div className="absolute right-1 top-1/2 -translate-y-1/2 hidden group-hover/cal-task:flex items-center gap-0.5 bg-white/90 rounded backdrop-blur-sm px-0.5 shadow-sm">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleEditTask(t)
+                        }}
+                        className="p-0.5 text-zinc-500 hover:text-violet-600 rounded-sm"
+                      >
+                        <Pencil className="h-3 w-3" />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleDeleteTask(t.id)
+                        }}
+                        className="p-0.5 text-zinc-500 hover:text-red-600 rounded-sm"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -361,7 +413,10 @@ export default function Tasks() {
             <Star className="h-4 w-4 mr-2" /> Premium/Qualificado
           </Button>
           <Button
-            onClick={() => setIsCreateOpen(true)}
+            onClick={() => {
+              setNewTask({ id: '', description: '', due_date: '', lead_id: '' })
+              setIsCreateOpen(true)
+            }}
             className="bg-emerald-500 hover:bg-emerald-600 text-white"
           >
             <Plus className="h-4 w-4 mr-2" /> Nova Tarefa
@@ -390,7 +445,7 @@ export default function Tasks() {
       <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Nova Tarefa</DialogTitle>
+            <DialogTitle>{newTask.id ? 'Editar Tarefa' : 'Nova Tarefa'}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
@@ -436,7 +491,7 @@ export default function Tasks() {
               onClick={handleCreateTask}
               className="bg-emerald-500 hover:bg-emerald-600 text-white"
             >
-              Criar Tarefa
+              {newTask.id ? 'Salvar Alterações' : 'Criar Tarefa'}
             </Button>
           </DialogFooter>
         </DialogContent>

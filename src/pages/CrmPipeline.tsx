@@ -187,12 +187,6 @@ export default function CrmPipeline() {
                             <span className="font-semibold text-[13px] text-zinc-800 line-clamp-1">
                               {lead.name || 'Sem nome'}
                             </span>
-                            {lead.pending_interaction && (
-                              <span
-                                className="flex items-center justify-center h-4 w-4 rounded-full bg-amber-400 shrink-0"
-                                title="Interação pendente"
-                              />
-                            )}
                           </div>
                           <span
                             className={cn(

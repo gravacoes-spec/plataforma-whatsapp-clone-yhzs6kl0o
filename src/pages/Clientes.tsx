@@ -8,6 +8,7 @@ import {
 } from '@/services/bd-clientes'
 import { getLeads, LeadRecord } from '@/services/leads'
 import { getUsers } from '@/services/users'
+import { getMentors } from '@/services/bd-mentor'
 import { getVendasByLeadAndEmail } from '@/services/hotmart'
 import {
   getMentoriaPeriodos,
@@ -77,15 +78,28 @@ export default function Clientes() {
 
   const loadData = async () => {
     try {
-      const [cliData, leadData, usersData] = await Promise.all([
+      const [cliData, leadData, usersData, mentorsData] = await Promise.all([
         getBdClientes(),
         getLeads(),
         getUsers(),
+        getMentors(),
       ])
       setClientes(cliData)
       setLeads(leadData)
       setUsers(usersData)
-      setMentors(usersData.filter((u) => u.perfil_acess === 'Mentor(a)'))
+
+      const activeMentorEmails = mentorsData
+        .filter((m) => m.ativo)
+        .map((m) => m.email?.toLowerCase())
+      setMentors(
+        usersData.filter(
+          (u) =>
+            u.perfil_acess === 'Mentor(a)' &&
+            u.email &&
+            activeMentorEmails.includes(u.email.toLowerCase()),
+        ),
+      )
+
       setSellers(usersData.filter((u) => u.perfil_acess === 'Vendedor'))
     } catch (e) {
       console.error(e)

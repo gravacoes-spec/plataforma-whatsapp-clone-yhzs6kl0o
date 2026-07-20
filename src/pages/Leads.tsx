@@ -4,6 +4,7 @@ import { getUsers } from '@/services/users'
 import { getVendasByLeadAndEmail } from '@/services/hotmart'
 import { useRealtime } from '@/hooks/use-realtime'
 import { Plus, Search, Loader2, Pencil, Trash2, SlidersHorizontal, ShoppingBag } from 'lucide-react'
+import { useSearchParams } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { PageHeader } from '@/components/ui/page-header'
@@ -59,6 +60,7 @@ const LOSS_REASONS = [
 ]
 
 export default function Leads() {
+  const [searchParams, setSearchParams] = useSearchParams()
   const [leads, setLeads] = useState<LeadRecord[]>([])
   const [users, setUsers] = useState<any[]>([])
   const [filteredLeads, setFilteredLeads] = useState<LeadRecord[]>([])
@@ -86,6 +88,19 @@ export default function Leads() {
   }, [])
 
   useRealtime('Leads', () => loadData())
+
+  useEffect(() => {
+    const leadId = searchParams.get('lead')
+    if (leadId && leads.length > 0) {
+      const leadToEdit = leads.find((l) => l.id === leadId)
+      if (leadToEdit && !isModalOpen) {
+        handleOpenModal(leadToEdit)
+        const params = new URLSearchParams(searchParams)
+        params.delete('lead')
+        setSearchParams(params, { replace: true })
+      }
+    }
+  }, [leads, searchParams, isModalOpen, setSearchParams])
 
   useEffect(() => {
     setFilteredLeads(

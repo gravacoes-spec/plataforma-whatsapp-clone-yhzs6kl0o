@@ -81,10 +81,13 @@ routerAdd(
       headers[h] = headers[h].trim()
     }
 
-    var getVal = function (row, headerName) {
-      var idx = headers.indexOf(headerName)
-      if (idx === -1) return ''
-      return (row[idx] || '').trim()
+    var getVal = function (row, aliases) {
+      if (!Array.isArray(aliases)) aliases = [aliases]
+      for (var a = 0; a < aliases.length; a++) {
+        var idx = headers.indexOf(aliases[a])
+        if (idx !== -1) return (row[idx] || '').trim()
+      }
+      return ''
     }
 
     var vendasCol = $app.findCollectionByNameOrId('vendas_hotmart')
@@ -100,20 +103,27 @@ routerAdd(
 
       var row = parseCSVLine(lines[i])
 
-      var nomeProduto = getVal(row, 'Nome do Produto')
-      var transacao = getVal(row, 'Transação')
-      var meioPagamento = getVal(row, 'Meio de Pagamento')
-      var moeda = getVal(row, 'Moeda')
-      var precoTotal = parseBrazilianNumber(getVal(row, 'Preço Total'))
-      var status = getVal(row, 'Status')
-      var dataVenda = parseDate(getVal(row, 'Data de Venda'))
-      var nome = getVal(row, 'Nome')
-      var email = getVal(row, 'Email')
-      var documento = getVal(row, 'Documento')
-      var telefone = normalizePhone(getVal(row, 'Telefone'))
-      var cep = getVal(row, 'CEP')
-      var cidade = getVal(row, 'Cidade')
-      var estado = getVal(row, 'Estado')
+      var nomeProduto = getVal(row, ['Nome do Produto', 'Product Name', 'Produto', 'Product'])
+      var transacao = getVal(row, ['Transação', 'Transaction', 'Venda', 'Order'])
+      var meioPagamento = getVal(row, [
+        'Meio de Pagamento',
+        'Payment Method',
+        'Forma de Pagamento',
+        'Payment Type',
+      ])
+      var moeda = getVal(row, ['Moeda', 'Currency'])
+      var precoTotal = parseBrazilianNumber(
+        getVal(row, ['Preço Total', 'Preço', 'Total Price', 'Vlr_Pago', 'Valor', 'Price']),
+      )
+      var status = getVal(row, ['Status', 'Status da Compra', 'Purchase Status'])
+      var dataVenda = parseDate(getVal(row, ['Data de Venda', 'Purchase Date', 'Data', 'Date']))
+      var nome = getVal(row, ['Nome', 'Nome do Comprador', 'Buyer Name', 'Name'])
+      var email = getVal(row, ['Email', 'E-mail', 'Buyer Email'])
+      var documento = getVal(row, ['Documento', 'CPF/CNPJ', 'Document', 'CPF'])
+      var telefone = normalizePhone(getVal(row, ['Telefone', 'Phone', 'Celular', 'Mobile']))
+      var cep = getVal(row, ['CEP', 'Zip Code', 'ZipCode'])
+      var cidade = getVal(row, ['Cidade', 'City'])
+      var estado = getVal(row, ['Estado', 'State', 'UF'])
 
       try {
         var vendasRecord = null

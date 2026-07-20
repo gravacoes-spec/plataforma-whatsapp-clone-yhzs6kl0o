@@ -37,7 +37,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { useToast } from '@/hooks/use-toast'
 import { useAuth } from '@/hooks/use-auth'
-import { useNavigate, useLocation } from 'react-router-dom'
+import { useNavigate, useLocation, useSearchParams } from 'react-router-dom'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -90,6 +90,7 @@ export default function Inbox() {
   const { isAuthenticated, loading: authLoading } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
+  const [searchParams, setSearchParams] = useSearchParams()
 
   const sortMessagesList = (msgs: any[]) => {
     return [...msgs].sort((a, b) => {
@@ -136,6 +137,20 @@ export default function Inbox() {
         if (location.state?.contactId) {
           const contact = data.find((c) => c.id === location.state.contactId)
           if (contact) setSelectedContact(contact)
+        } else {
+          const phoneParam = searchParams.get('phone')
+          if (phoneParam) {
+            const cleanPhone = phoneParam.replace(/\D/g, '')
+            const contact = data.find(
+              (c) => c.phone?.replace(/\D/g, '') === cleanPhone || c.phone?.includes(cleanPhone),
+            )
+            if (contact) {
+              setSelectedContact(contact)
+              const params = new URLSearchParams(searchParams)
+              params.delete('phone')
+              setSearchParams(params, { replace: true })
+            }
+          }
         }
       } catch (e) {
         console.error('Failed to load contacts:', e)
