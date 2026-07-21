@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { getLeads, updateLead, createLead, deleteLead, LeadRecord } from '@/services/leads'
 import { getUsers } from '@/services/users'
 import { getVendasByLeadAndEmail } from '@/services/hotmart'
@@ -66,6 +66,9 @@ export default function Leads() {
   const [filteredLeads, setFilteredLeads] = useState<LeadRecord[]>([])
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
+  const [showFilters, setShowFilters] = useState(false)
+  const [filterStage, setFilterStage] = useState('all')
+  const [filterSeller, setFilterSeller] = useState('all')
 
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingLead, setEditingLead] = useState<Partial<LeadRecord> | null>(null)
@@ -102,16 +105,23 @@ export default function Leads() {
     }
   }, [leads, searchParams, isModalOpen, setSearchParams])
 
-  useEffect(() => {
+  const applyFilters = useCallback(() => {
     setFilteredLeads(
-      leads.filter(
-        (l) =>
+      leads.filter((l) => {
+        const matchSearch =
           (l.name || '').toLowerCase().includes(search.toLowerCase()) ||
           (l.email || '').toLowerCase().includes(search.toLowerCase()) ||
-          (l.phone || '').includes(search),
-      ),
+          (l.phone || '').includes(search)
+        const matchStage = filterStage === 'all' || l.etapa_pipeline === filterStage
+        const matchSeller = filterSeller === 'all' || l.vend_resp === filterSeller
+        return matchSearch && matchStage && matchSeller
+      }),
     )
-  }, [search, leads])
+  }, [search, leads, filterStage, filterSeller])
+
+  useEffect(() => {
+    applyFilters()
+  }, [applyFilters])
 
   useEffect(() => {
     if (editingLead?.id || editingLead?.email) {
@@ -207,7 +217,11 @@ export default function Leads() {
             />
           </div>
           <div className="flex items-center gap-3">
-            <Button variant="outline" className="bg-white">
+            <Button
+              variant="outline"
+              className="bg-white"
+              onClick={() => setShowFilters((s) => !s)}
+            >
               <SlidersHorizontal className="h-4 w-4 mr-2" /> Filtros
             </Button>
             <Button
@@ -218,6 +232,54 @@ export default function Leads() {
             </Button>
           </div>
         </div>
+
+        {showFilters && (
+          <div className="mb-4 flex flex-wrap items-center gap-3 rounded-xl border border-zinc-200/60 bg-white p-4 shadow-sm">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-zinc-600">Etapa:</span>
+              <Select value={filterStage} onValueChange={setFilterStage}>
+                <SelectTrigger className="w-[200px] h-8">
+                  <SelectValue placeholder="Todas as etapas" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas as etapas</SelectItem>
+                  {PIPELINE_STAGES.map((s) => (
+                    <SelectItem key={s} value={s}>
+                      {s}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-zinc-600">Vendedor:</span>
+              <Select value={filterSeller} onValueChange={setFilterSeller}>
+                <SelectTrigger className="w-[200px] h-8">
+                  <SelectValue placeholder="Todos os vendedores" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os vendedores</SelectItem>
+                  {users.map((u) => (
+                    <SelectItem key={u.id} value={u.id}>
+                      {u.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 text-zinc-500"
+              onClick={() => {
+                setFilterStage('all')
+                setFilterSeller('all')
+              }}
+            >
+              Limpar filtros
+            </Button>
+          </div>
+        )}
 
         <div className="bg-white rounded-xl border border-zinc-200/60 overflow-hidden shadow-sm flex-1">
           <Table>

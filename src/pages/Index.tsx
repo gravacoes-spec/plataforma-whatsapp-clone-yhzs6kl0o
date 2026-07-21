@@ -135,7 +135,7 @@ export default function Index() {
       )
     })
 
-    const fatTotal = validVendas.reduce((acc, v) => acc + (v.comissao_produtor || 0), 0)
+    const fatTotal = validVendas.reduce((acc, v) => acc + (v.preco_total || 0), 0)
     const qtVendas = validVendas.length
     const leadsTotais = filteredLeads.length
     const convGeral = leadsTotais > 0 ? ((qtVendas / leadsTotais) * 100).toFixed(1) : '0.0'

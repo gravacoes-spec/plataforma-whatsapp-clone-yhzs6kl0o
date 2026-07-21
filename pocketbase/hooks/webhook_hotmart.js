@@ -168,13 +168,27 @@ routerAdd('POST', '/backend/v1/webhook/hotmart', (e) => {
 
     $app.saveNoValidate(vendasRecord)
 
-    // CUSTOMER DATABASE SYNC
+    // CUSTOMER DATABASE SYNC — replicate every successful vendas_hotmart entry
     const purchaseStatus = body.event || purchase.status || ''
-    if (
-      purchaseStatus === 'PURCHASE_APPROVED' ||
-      purchase.status === 'APPROVED' ||
-      purchase.status === 'COMPLETE'
-    ) {
+    var isCancelled =
+      purchaseStatus === 'PURCHASE_CANCELED' ||
+      purchaseStatus === 'PURCHASE_REFUNDED' ||
+      purchase.status === 'CANCELED' ||
+      purchase.status === 'REFUNDED'
+
+    if (isCancelled) {
+      try {
+        const email = buyer.email || ''
+        const phone = telefoneComprador || ''
+        if (email || phone) {
+          let filters = []
+          if (email) filters.push(`email = "${email.replace(/"/g, '')}"`)
+          if (phone) filters.push(`Telefone = "${phone.replace(/"/g, '')}"`)
+          let cliente = $app.findFirstRecordByFilter('bd_clientes', filters.join(' || '))
+          $app.delete(cliente)
+        }
+      } catch (_) {}
+    } else {
       let cliente = null
       try {
         const email = buyer.email || ''
@@ -214,23 +228,6 @@ routerAdd('POST', '/backend/v1/webhook/hotmart', (e) => {
         cliente.set('top_obj', lead.getString('top_obj'))
       }
       $app.saveNoValidate(cliente)
-    } else if (
-      purchaseStatus === 'PURCHASE_CANCELED' ||
-      purchaseStatus === 'PURCHASE_REFUNDED' ||
-      purchase.status === 'CANCELED' ||
-      purchase.status === 'REFUNDED'
-    ) {
-      try {
-        const email = buyer.email || ''
-        const phone = telefoneComprador || ''
-        if (email || phone) {
-          let filters = []
-          if (email) filters.push(`email = "${email.replace(/"/g, '')}"`)
-          if (phone) filters.push(`Telefone = "${phone.replace(/"/g, '')}"`)
-          let cliente = $app.findFirstRecordByFilter('bd_clientes', filters.join(' || '))
-          $app.delete(cliente)
-        }
-      } catch (_) {}
     }
 
     if (lead) {

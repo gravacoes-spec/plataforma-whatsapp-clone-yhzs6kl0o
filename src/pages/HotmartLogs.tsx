@@ -86,8 +86,8 @@ export default function HotmartLogs() {
   const handleClearVendas = async () => {
     setClearing(true)
     try {
-      const count = await clearAllVendas()
-      toast.success(`${count} registros de vendas removidos com sucesso!`)
+      const result = await clearAllVendas()
+      toast.success('Registros de vendas removidos com sucesso!')
       setClearDialogOpen(false)
     } catch (err) {
       toast.error('Erro ao limpar registros de vendas')

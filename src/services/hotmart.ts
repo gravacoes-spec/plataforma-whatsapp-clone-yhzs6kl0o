@@ -23,7 +23,8 @@ export const getVendasByLeadAndEmail = async (leadId: string, email?: string) =>
 }
 
 export const clearAllVendas = async () => {
-  const records = await pb.collection('vendas_hotmart').getFullList()
-  await Promise.all(records.map((r) => pb.collection('vendas_hotmart').delete(r.id)))
-  return records.length
+  const result = await pb.send('/backend/v1/vendas-hotmart/purge', {
+    method: 'POST',
+  })
+  return result.ok ? 1 : 0
 }
