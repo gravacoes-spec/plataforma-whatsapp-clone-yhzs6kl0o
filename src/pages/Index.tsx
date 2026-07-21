@@ -100,16 +100,14 @@ export default function Index() {
     })
 
     const fVendas = vendas.filter((v) => {
-      // Puxa a data da venda ou a de criação caso venha em branco
       const d = v.data_pedido ? parseISO(v.data_pedido) : parseISO(v.created)
       const dateMatch = isAfter(d, startDate) && isBefore(d, endDate)
 
-      // CRUZAMENTO DINÂMICO (Caminho 2): Acha o vendedor da venda através da tabela Leads
       let sellerMatch = true
       if (sellerId !== 'todos') {
         const lead = leads.find((l) => l.id === v.lead_id)
         if (lead && lead.vend_resp !== sellerId) sellerMatch = false
-        if (!lead) sellerMatch = false // Se for órfão, não mostra para um vendedor específico
+        if (!lead) sellerMatch = false
       }
       return dateMatch && sellerMatch
     })
@@ -124,17 +122,21 @@ export default function Index() {
   }, [leads, vendas, metas, period, sellerId, customStart, customEnd])
 
   const kpis = useMemo(() => {
-    // Filtro inteligente que entende maiúsculas e minúsculas
     const validVendas = filteredVendas.filter((v) => {
       const status = (v.status_compra || '').toUpperCase()
       return (
         status === 'APPROVED' ||
         status === 'COMPLETE' ||
+        status === 'COMPLETED' ||
         status === 'APROVADA' ||
-        status === 'COMPLETA'
+        status === 'COMPLETA' ||
+        status === 'PAID' ||
+        status === 'PAGO' ||
+        status === 'PAYMENT_CONFIRMED'
       )
     })
 
+    // CORRIGIDO: Retornando para preco_total ao invés de comissao_produtor
     const fatTotal = validVendas.reduce((acc, v) => acc + (v.preco_total || 0), 0)
     const qtVendas = validVendas.length
     const leadsTotais = filteredLeads.length
@@ -168,7 +170,6 @@ export default function Index() {
   }, [filteredLeads])
 
   const chartData = useMemo(() => {
-    // SUBSTITUIÇÃO: Os valores 'realizado' agora puxam das vendas e leads reais (kpis), e não da tabela de Metas.
     const agg = {
       Leads: { meta: 0, realizado: kpis.leadsTotais },
       Abordagens: { meta: 0, realizado: 0 },
@@ -179,13 +180,10 @@ export default function Index() {
 
     filteredMetas.forEach((m) => {
       agg.Leads.meta += m.m_leads_recebidos || 0
-
       agg.Abordagens.meta += m.m_abord_prospec_ativa || 0
       agg.Abordagens.realizado += m.r_abord_prospec_ativa || 0
-
       agg.Consultas.meta += m.m_apresent_consult || 0
       agg.Consultas.realizado += m.r_apresent_consult || 0
-
       agg.Vendas.meta += m.m_vendas || 0
       agg.Faturamento.meta += m.m_faturamento || 0
     })
@@ -266,7 +264,6 @@ export default function Index() {
       </div>
 
       <div className="p-8 space-y-6">
-        {/* KPI Cards */}
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           <Card className="shadow-sm border-zinc-200/60">
             <CardHeader className="flex flex-row items-center justify-between pb-2 pt-4 px-4">
@@ -339,7 +336,6 @@ export default function Index() {
           </Card>
         </div>
 
-        {/* GRID ALTERADA PARA 2 COLUNAS AQUI: lg:grid-cols-2 */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card className="shadow-sm border-zinc-200/60 flex flex-col">
             <CardHeader className="pb-2">
@@ -369,7 +365,6 @@ export default function Index() {
               </div>
             </CardContent>
           </Card>
-
           <Card className="shadow-sm border-zinc-200/60">
             <CardHeader className="pb-2">
               <CardTitle className="text-lg">Meta versus Realizado</CardTitle>

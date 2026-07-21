@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState } from 'react'
 import { getLeads, updateLead, createLead, deleteLead, LeadRecord } from '@/services/leads'
 import { getUsers } from '@/services/users'
 import { getVendasByLeadAndEmail } from '@/services/hotmart'
@@ -36,6 +36,7 @@ import { toast } from 'sonner'
 import { format, parseISO } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { Switch } from '@/components/ui/switch'
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 
 const PIPELINE_STAGES = [
   '1. Novo Lead',
@@ -66,10 +67,9 @@ export default function Leads() {
   const [filteredLeads, setFilteredLeads] = useState<LeadRecord[]>([])
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
-  const [showFilters, setShowFilters] = useState(false)
-  const [filterStage, setFilterStage] = useState('all')
+  const [filterOpen, setFilterOpen] = useState(false)
+  const [filterPipeline, setFilterPipeline] = useState('all')
   const [filterSeller, setFilterSeller] = useState('all')
-
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingLead, setEditingLead] = useState<Partial<LeadRecord> | null>(null)
   const [leadVendas, setLeadVendas] = useState<any[]>([])
@@ -105,23 +105,18 @@ export default function Leads() {
     }
   }, [leads, searchParams, isModalOpen, setSearchParams])
 
-  const applyFilters = useCallback(() => {
-    setFilteredLeads(
-      leads.filter((l) => {
-        const matchSearch =
-          (l.name || '').toLowerCase().includes(search.toLowerCase()) ||
-          (l.email || '').toLowerCase().includes(search.toLowerCase()) ||
-          (l.phone || '').includes(search)
-        const matchStage = filterStage === 'all' || l.etapa_pipeline === filterStage
-        const matchSeller = filterSeller === 'all' || l.vend_resp === filterSeller
-        return matchSearch && matchStage && matchSeller
-      }),
-    )
-  }, [search, leads, filterStage, filterSeller])
-
   useEffect(() => {
-    applyFilters()
-  }, [applyFilters])
+    setFilteredLeads(
+      leads.filter(
+        (l) =>
+          ((l.name || '').toLowerCase().includes(search.toLowerCase()) ||
+            (l.email || '').toLowerCase().includes(search.toLowerCase()) ||
+            (l.phone || '').includes(search)) &&
+          (filterPipeline === 'all' || l.etapa_pipeline === filterPipeline) &&
+          (filterSeller === 'all' || l.vend_resp === filterSeller),
+      ),
+    )
+  }, [search, leads, filterPipeline, filterSeller])
 
   useEffect(() => {
     if (editingLead?.id || editingLead?.email) {
@@ -206,8 +201,9 @@ export default function Leads() {
     <div className="flex-1 flex flex-col h-full bg-zinc-50/50">
       <PageHeader title="Leads" description="Gerencie seus contatos e clientes em potencial." />
       <div className="px-8 pb-8 flex-1 flex flex-col">
-        <div className="flex items-center justify-between mb-6">
-          <div className="relative w-80">
+        {/* BOTÕES COM A MELHORIA DE RESPONSIVIDADE */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-3">
+          <div className="relative w-full sm:w-80">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
             <Input
               placeholder="Buscar por nome, email ou telefone..."
@@ -216,70 +212,27 @@ export default function Leads() {
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 w-full sm:w-auto">
             <Button
               variant="outline"
-              className="bg-white"
-              onClick={() => setShowFilters((s) => !s)}
+              className="bg-white flex-1 sm:flex-initial justify-center"
+              onClick={() => setFilterOpen(true)}
             >
               <SlidersHorizontal className="h-4 w-4 mr-2" /> Filtros
+              {(filterPipeline !== 'all' || filterSeller !== 'all') && (
+                <span className="ml-2 inline-flex items-center justify-center w-5 h-5 text-[10px] font-bold rounded-full bg-violet-600 text-white">
+                  {(filterPipeline !== 'all' ? 1 : 0) + (filterSeller !== 'all' ? 1 : 0)}
+                </span>
+              )}
             </Button>
             <Button
               onClick={() => handleOpenModal()}
-              className="bg-violet-600 hover:bg-violet-700 text-white"
+              className="bg-violet-600 hover:bg-violet-700 text-white flex-1 sm:flex-initial"
             >
               <Plus className="h-4 w-4 mr-2" /> Novo Lead
             </Button>
           </div>
         </div>
-
-        {showFilters && (
-          <div className="mb-4 flex flex-wrap items-center gap-3 rounded-xl border border-zinc-200/60 bg-white p-4 shadow-sm">
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-zinc-600">Etapa:</span>
-              <Select value={filterStage} onValueChange={setFilterStage}>
-                <SelectTrigger className="w-[200px] h-8">
-                  <SelectValue placeholder="Todas as etapas" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todas as etapas</SelectItem>
-                  {PIPELINE_STAGES.map((s) => (
-                    <SelectItem key={s} value={s}>
-                      {s}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-zinc-600">Vendedor:</span>
-              <Select value={filterSeller} onValueChange={setFilterSeller}>
-                <SelectTrigger className="w-[200px] h-8">
-                  <SelectValue placeholder="Todos os vendedores" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos os vendedores</SelectItem>
-                  {users.map((u) => (
-                    <SelectItem key={u.id} value={u.id}>
-                      {u.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-8 text-zinc-500"
-              onClick={() => {
-                setFilterStage('all')
-                setFilterSeller('all')
-              }}
-            >
-              Limpar filtros
-            </Button>
-          </div>
-        )}
 
         <div className="bg-white rounded-xl border border-zinc-200/60 overflow-hidden shadow-sm flex-1">
           <Table>
@@ -350,6 +303,58 @@ export default function Leads() {
         </div>
       </div>
 
+      <Sheet open={filterOpen} onOpenChange={setFilterOpen}>
+        <SheetContent className="sm:max-w-[400px]">
+          <SheetHeader>
+            <SheetTitle>Filtros</SheetTitle>
+          </SheetHeader>
+          <div className="px-4 py-6 space-y-6">
+            <div className="space-y-2">
+              <Label>Etapa do Pipeline</Label>
+              <Select value={filterPipeline} onValueChange={setFilterPipeline}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Todas as etapas" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas as etapas</SelectItem>
+                  {PIPELINE_STAGES.map((s) => (
+                    <SelectItem key={s} value={s}>
+                      {s}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Vendedor Responsável</Label>
+              <Select value={filterSeller} onValueChange={setFilterSeller}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Todos os vendedores" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os vendedores</SelectItem>
+                  {users.map((u) => (
+                    <SelectItem key={u.id} value={u.id}>
+                      {u.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => {
+                setFilterPipeline('all')
+                setFilterSeller('all')
+              }}
+            >
+              Limpar Filtros
+            </Button>
+          </div>
+        </SheetContent>
+      </Sheet>
+
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
         <DialogContent className="sm:max-w-[700px] p-0 overflow-hidden">
           <DialogHeader className="p-6 pb-4 border-b">
@@ -366,7 +371,6 @@ export default function Leads() {
                   <TabsTrigger value="conversao">Conversão</TabsTrigger>
                 </TabsList>
               </div>
-
               <div className="p-6 py-4 max-h-[60vh] overflow-y-auto">
                 <TabsContent value="basico" className="space-y-4 mt-0">
                   <div className="space-y-2">
