@@ -108,14 +108,20 @@ routerAdd(
       return ''
     }
 
-    var vendasCol = $app.findCollectionByNameOrId('vendas_hotmart')
-    var clientesCol = $app.findCollectionByNameOrId('bd_clientes')
-    var leadsCol = $app.findCollectionByNameOrId('Leads')
+    var vendasCol, clientesCol, leadsCol
+    try {
+      vendasCol = $app.findCollectionByNameOrId('vendas_hotmart')
+      clientesCol = $app.findCollectionByNameOrId('bd_clientes')
+      leadsCol = $app.findCollectionByNameOrId('Leads')
+    } catch (colErr) {
+      return e.json(500, { ok: false, error: 'Collection lookup failed: ' + String(colErr) })
+    }
 
     var imported = 0
     var errors = 0
     var clientesSynced = 0
 
+    try {
     for (var i = 1; i < lines.length; i++) {
       if (!lines[i].trim()) continue
 
@@ -335,11 +341,16 @@ routerAdd(
       }
     }
 
-    return e.json(200, {
-      ok: true,
-      imported: imported,
-      errors: errors,
-      clientesSynced: clientesSynced,
+    var result = { ok: true, imported: imported, errors: errors, clientesSynced: clientesSynced }
+    return e.json(200, result)
+  } catch (fatalErr) {
+    $app.logger().error('CSV import fatal error', 'error', String(fatalErr))
+    return e.json(500, {
+      ok: false,
+      error: 'Import failed: ' + String(fatalErr),
+      imported: typeof imported !== 'undefined' ? imported : 0,
+      errors: typeof errors !== 'undefined' ? errors : 0,
+      clientesSynced: typeof clientesSynced !== 'undefined' ? clientesSynced : 0,
     })
   },
   $apis.requireAuth(),
