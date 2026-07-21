@@ -18,7 +18,6 @@ routerAdd(
       return e.badRequestError('CSV must have a header row and at least one data row')
     }
 
-    // Detecta o delimitador automaticamente
     var delimiter = lines[0].indexOf(';') > -1 ? ';' : ','
 
     var parseCSVLine = function (line, delim) {
@@ -57,20 +56,30 @@ routerAdd(
       return isNaN(num) ? 0 : num
     }
 
+    // NOVA FUNÇÃO DE DATA: Força o padrão brasileiro e aplica Fuso Horário -03:00
     var parseDate = function (str) {
       if (!str) return ''
+
+      var parts = str.trim().split(/[\/\s:]+/)
+
+      if (parts.length >= 3) {
+        var pad = function (n) {
+          return String(n).length < 2 ? '0' + String(n) : String(n)
+        }
+        var day = pad(parts[0])
+        var month = pad(parts[1])
+        var year = parts[2]
+        var hour = parts.length > 3 ? pad(parts[3]) : '00'
+        var min = parts.length > 4 ? pad(parts[4]) : '00'
+        var sec = parts.length > 5 ? pad(parts[5]) : '00'
+
+        // Formata para YYYY-MM-DD HH:mm:ss-03:00
+        return year + '-' + month + '-' + day + ' ' + hour + ':' + min + ':' + sec + '-03:00'
+      }
+
       var d = new Date(str)
       if (!isNaN(d.getTime())) return d.toISOString()
-      var parts = str.split(/[\/\s:]/)
-      if (parts.length >= 3) {
-        var day = parseInt(parts[0], 10)
-        var month = parseInt(parts[1], 10) - 1
-        var year = parseInt(parts[2], 10)
-        var hour = parts.length > 3 ? parseInt(parts[3], 10) : 0
-        var min = parts.length > 4 ? parseInt(parts[4], 10) : 0
-        d = new Date(year, month, day, hour, min)
-        if (!isNaN(d.getTime())) return d.toISOString()
-      }
+
       return ''
     }
 
@@ -81,7 +90,6 @@ routerAdd(
 
     var headers = parseCSVLine(lines[0], delimiter)
     for (var h = 0; h < headers.length; h++) {
-      // Limpa os cabeçalhos de caracteres invisíveis que atrapalham a leitura
       headers[h] = headers[h].replace(/^[\uFEFF\u200B]/, '').trim()
     }
 
@@ -115,7 +123,6 @@ routerAdd(
 
       var row = parseCSVLine(lines[i], delimiter)
 
-      // Mapeamento EXATO baseado nos nomes de colunas que você enviou
       var transacao = getVal(row, ['Código da transação'])
       var status = getVal(row, ['Status da transação'])
       var dataVenda = parseDate(getVal(row, ['Data da transação']))
@@ -151,7 +158,6 @@ routerAdd(
           vendasRecord = new Record(vendasCol)
         }
 
-        // Salvando os dados exatos na base vendas_hotmart
         vendasRecord.set('tipo_evento', 'IMPORTED')
         vendasRecord.set('transacao', transacao)
         vendasRecord.set('status_compra', status)
