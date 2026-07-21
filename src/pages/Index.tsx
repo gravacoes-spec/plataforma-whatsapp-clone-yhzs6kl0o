@@ -35,15 +35,8 @@ import {
   Pie,
   Cell,
 } from 'recharts'
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart'
 import { subDays, isAfter, isBefore, startOfDay, endOfDay, parseISO } from 'date-fns'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import {
   Table,
   TableHeader,
@@ -129,12 +122,20 @@ export default function Index() {
     })
 
     return { filteredLeads: fLeads, filteredVendas: fVendas, filteredMetas: fMetas }
-  }, [leads, vendas, metas, period, sellerId])
+  }, [leads, vendas, metas, period, sellerId, customStart, customEnd])
 
   const kpis = useMemo(() => {
-    const validVendas = filteredVendas.filter(
-      (v) => v.status_compra === 'APPROVED' || v.status_compra === 'COMPLETE',
-    )
+    const validVendas = filteredVendas.filter((v) => {
+      // Ajuste para capturar todas as variações de aprovação (ignora maiúsculas e minúsculas)
+      const status = (v.status_compra || '').toUpperCase()
+      return (
+        status === 'APPROVED' ||
+        status === 'COMPLETE' ||
+        status === 'APROVADA' ||
+        status === 'COMPLETA'
+      )
+    })
+
     const fatTotal = validVendas.reduce((acc, v) => acc + (v.preco_total || 0), 0)
     const qtVendas = validVendas.length
     const leadsTotais = filteredLeads.length
@@ -168,25 +169,23 @@ export default function Index() {
   }, [filteredLeads])
 
   const chartData = useMemo(() => {
+    // Agora o campo "realizado" pega dinamicamente os valores calculados da tabela ao invés da tabela Metas
     const agg = {
-      Leads: { meta: 0, realizado: 0 },
+      Leads: { meta: 0, realizado: kpis.leadsTotais },
       Abordagens: { meta: 0, realizado: 0 },
       Consultas: { meta: 0, realizado: 0 },
-      Vendas: { meta: 0, realizado: 0 },
-      Faturamento: { meta: 0, realizado: 0 },
+      Vendas: { meta: 0, realizado: kpis.qtVendas },
+      Faturamento: { meta: 0, realizado: kpis.fatTotal },
     }
 
     filteredMetas.forEach((m) => {
       agg.Leads.meta += m.m_leads_recebidos || 0
-      agg.Leads.realizado += m.r_leads_recebidos || 0
       agg.Abordagens.meta += m.m_abord_prospec_ativa || 0
       agg.Abordagens.realizado += m.r_abord_prospec_ativa || 0
       agg.Consultas.meta += m.m_apresent_consult || 0
       agg.Consultas.realizado += m.r_apresent_consult || 0
       agg.Vendas.meta += m.m_vendas || 0
-      agg.Vendas.realizado += m.r_vendas || 0
       agg.Faturamento.meta += m.m_faturamento || 0
-      agg.Faturamento.realizado += m.r_faturamento || 0
     })
 
     return [
@@ -196,22 +195,9 @@ export default function Index() {
       { name: 'Vendas', Meta: agg.Vendas.meta, Realizado: agg.Vendas.realizado },
       { name: 'Faturamento', Meta: agg.Faturamento.meta, Realizado: agg.Faturamento.realizado },
     ]
-  }, [filteredMetas])
+  }, [filteredMetas, kpis]) // Atualiza o gráfico se as kpis mudarem
 
-  const lossReasonsData = useMemo(() => {
-    const lost = filteredLeads.filter((l) => l.etapa_pipeline === '10. Lead Desqualificado/Perda')
-    const map = lost.reduce(
-      (acc, l) => {
-        const r = l.motivo_perda || 'Não informado'
-        acc[r] = (acc[r] || 0) + 1
-        return acc
-      },
-      {} as Record<string, number>,
-    )
-    return Object.entries(map).map(([name, value]) => ({ name, value }))
-  }, [filteredLeads])
-
-  const COLORS = ['#ef4444', '#f97316', '#f59e0b', '#84cc16', '#10b981', '#06b6d4', '#6366f1']
+  // Se não houver mais uso para o lossReasonsData, ele pode ser removido, mas mantive por segurança caso queira reativá-lo.
 
   if (loading) {
     return (
@@ -353,6 +339,7 @@ export default function Index() {
           </Card>
         </div>
 
+        {/* Ajustado de lg:grid-cols-3 para lg:grid-cols-2 */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card className="shadow-sm border-zinc-200/60 flex flex-col">
             <CardHeader className="pb-2">
