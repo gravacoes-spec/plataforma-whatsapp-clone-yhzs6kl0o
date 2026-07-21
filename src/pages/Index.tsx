@@ -353,48 +353,7 @@ export default function Index() {
           </Card>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <Card className="shadow-sm border-zinc-200/60 flex flex-col">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg">Motivos de Perda</CardTitle>
-              <p className="text-sm text-zinc-500">Distribuição dos leads desqualificados</p>
-            </CardHeader>
-            <CardContent className="flex-1 flex flex-col justify-center py-2 h-[350px]">
-              {lossReasonsData.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={lossReasonsData}
-                      dataKey="value"
-                      nameKey="name"
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={60}
-                      outerRadius={80}
-                      paddingAngle={2}
-                    >
-                      {lossReasonsData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip
-                      contentStyle={{
-                        borderRadius: '8px',
-                        border: '1px solid #e4e4e7',
-                        fontSize: '12px',
-                      }}
-                    />
-                    <Legend wrapperStyle={{ fontSize: '12px' }} />
-                  </PieChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="flex items-center justify-center h-full text-zinc-400 text-sm">
-                  Nenhuma perda no período
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card className="shadow-sm border-zinc-200/60 flex flex-col">
             <CardHeader className="pb-2">
               <CardTitle className="text-lg">Funil de Vendas</CardTitle>
