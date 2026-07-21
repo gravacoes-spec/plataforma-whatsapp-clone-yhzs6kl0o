@@ -56,7 +56,6 @@ routerAdd(
       return isNaN(num) ? 0 : num
     }
 
-    // NOVA FUNÇÃO DE DATA: Força o padrão brasileiro e aplica Fuso Horário -03:00
     var parseDate = function (str) {
       if (!str) return ''
 
@@ -73,7 +72,6 @@ routerAdd(
         var min = parts.length > 4 ? pad(parts[4]) : '00'
         var sec = parts.length > 5 ? pad(parts[5]) : '00'
 
-        // Formata para YYYY-MM-DD HH:mm:ss-03:00
         return year + '-' + month + '-' + day + ' ' + hour + ':' + min + ':' + sec + '-03:00'
       }
 
@@ -149,13 +147,17 @@ routerAdd(
 
       try {
         var vendasRecord = null
+        var isNewVenda = false
+
         if (transacao) {
           try {
             vendasRecord = $app.findFirstRecordByData('vendas_hotmart', 'transacao', transacao)
           } catch (_) {}
         }
+
         if (!vendasRecord) {
           vendasRecord = new Record(vendasCol)
+          isNewVenda = true // Marca que é uma venda nova para somar na tabela de Metas
         }
 
         vendasRecord.set('tipo_evento', 'IMPORTED')
@@ -188,6 +190,11 @@ routerAdd(
         }
 
         var statusCheck = (status || '').toUpperCase()
+        var isApproved =
+          statusCheck === 'APPROVED' ||
+          statusCheck === 'COMPLETE' ||
+          statusCheck === 'APROVADA' ||
+          statusCheck === 'COMPLETA'
 
         if (!lead && (email || telefone)) {
           lead = new Record(leadsCol)
@@ -196,13 +203,7 @@ routerAdd(
           lead.set('phone', telefone)
           lead.set('etapa_pipeline', '8. Venda Realizada')
           $app.saveNoValidate(lead)
-        } else if (
-          lead &&
-          (statusCheck === 'APPROVED' ||
-            statusCheck === 'COMPLETE' ||
-            statusCheck === 'APROVADA' ||
-            statusCheck === 'COMPLETA')
-        ) {
+        } else if (lead && isApproved) {
           lead.set('etapa_pipeline', '8. Venda Realizada')
           $app.saveNoValidate(lead)
         }
@@ -214,12 +215,81 @@ routerAdd(
         $app.saveNoValidate(vendasRecord)
         imported++
 
-        if (
-          statusCheck === 'APPROVED' ||
-          statusCheck === 'COMPLETE' ||
-          statusCheck === 'APROVADA' ||
-          statusCheck === 'COMPLETA'
-        ) {
+        // ==========================================================
+        // SINCRONIZAÇÃO COM A TABELA DE METAS (Cálculo do Dashboard)
+        // ==========================================================
+        if (lead && isNewVenda && isApproved) {
+          var vRespId = lead.getString('vend_resp')
+
+          if (vRespId) {
+            var isVendedor = false
+            try {
+              var vUser = $app.findRecordById('users', vRespId)
+              isVendedor = vUser.getString('perfil_acess') === 'Vendedor'
+            } catch (_) {}
+
+            if (isVendedor) {
+              var nowStr = new Date().toISOString().replace('T', ' ')
+              var metas = null
+
+              try {
+                var mRecs = $app.findRecordsByFilter(
+                  'Metas',
+                  'vend_resp = "' +
+                    vRespId +
+                    '" && periodo_in <= "' +
+                    nowStr +
+                    '" && periodo_fin >= "' +
+                    nowStr +
+                    '"',
+                  '-created',
+                  1,
+                  0,
+                )
+                if (mRecs.length > 0) metas = mRecs[0]
+              } catch (_) {}
+
+              // Se não existir meta para o ano, cria uma vazia
+              if (!metas) {
+                try {
+                  var mCol2 = $app.findCollectionByNameOrId('Metas')
+                  metas = new Record(mCol2)
+                  metas.set('vend_resp', vRespId)
+                  metas.set(
+                    'periodo_in',
+                    new Date(new Date().getFullYear(), 0, 1).toISOString().replace('T', ' '),
+                  )
+                  metas.set(
+                    'periodo_fin',
+                    new Date(new Date().getFullYear(), 11, 31, 23, 59, 59)
+                      .toISOString()
+                      .replace('T', ' '),
+                  )
+                  metas.set('r_vendas', 0)
+                  metas.set('r_faturamento', 0)
+                  metas.set('r_leads_recebidos', 0)
+                  metas.set('r_abord_prospec_ativa', 0)
+                  metas.set('r_apresent_consult', 0)
+                  metas.set('m_leads_recebidos', 0)
+                  metas.set('m_abord_prospec_ativa', 0)
+                  metas.set('m_apresent_consult', 0)
+                  metas.set('m_vendas', 0)
+                  metas.set('m_faturamento', 0)
+                } catch (_) {}
+              }
+
+              // Soma +1 venda e adiciona o faturamento da venda importada
+              if (metas) {
+                metas.set('r_vendas', (metas.getInt('r_vendas') || 0) + 1)
+                metas.set('r_faturamento', (metas.getFloat('r_faturamento') || 0) + precoTotal)
+                $app.saveNoValidate(metas)
+              }
+            }
+          }
+        }
+        // ==========================================================
+
+        if (isApproved) {
           var cliente = null
           if (email || telefone) {
             var cFilters = []
@@ -229,9 +299,11 @@ routerAdd(
               cliente = $app.findFirstRecordByFilter('bd_clientes', cFilters.join(' || '))
             } catch (_) {}
           }
+
           if (!cliente) {
             cliente = new Record(clientesCol)
           }
+
           cliente.set('Aluno_a', nome)
           cliente.set('email', email)
           cliente.set('Telefone', telefone)
@@ -253,6 +325,7 @@ routerAdd(
             cliente.set('maior_dif', lead.getString('maior_dif'))
             cliente.set('top_obj', lead.getString('top_obj'))
           }
+
           $app.saveNoValidate(cliente)
           clientesSynced++
         }
