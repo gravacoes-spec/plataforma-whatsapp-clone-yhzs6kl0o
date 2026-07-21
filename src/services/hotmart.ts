@@ -21,3 +21,9 @@ export const getVendasByLeadAndEmail = async (leadId: string, email?: string) =>
     sort: '-created',
   })
 }
+
+export const clearAllVendas = async () => {
+  const records = await pb.collection('vendas_hotmart').getFullList()
+  await Promise.all(records.map((r) => pb.collection('vendas_hotmart').delete(r.id)))
+  return records.length
+}
