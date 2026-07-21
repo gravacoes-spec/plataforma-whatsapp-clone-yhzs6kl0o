@@ -18,7 +18,7 @@ routerAdd(
       return e.badRequestError('CSV must have a header row and at least one data row')
     }
 
-    // Identifica o delimitador automaticamente
+    // Detecta o delimitador automaticamente
     var delimiter = lines[0].indexOf(';') > -1 ? ';' : ','
 
     var parseCSVLine = function (line, delim) {
@@ -81,28 +81,17 @@ routerAdd(
 
     var headers = parseCSVLine(lines[0], delimiter)
     for (var h = 0; h < headers.length; h++) {
-      headers[h] = headers[h].trim()
+      // Limpa os cabeçalhos de caracteres invisíveis que atrapalham a leitura
+      headers[h] = headers[h].replace(/^[\uFEFF\u200B]/, '').trim()
     }
 
-    // Função para remover acentos e facilitar a busca independente do que a Hotmart enviar
-    var removeAccents = function (str) {
-      return str
-        .replace(/[áàãâä]/gi, 'a')
-        .replace(/[éèêë]/gi, 'e')
-        .replace(/[íìîï]/gi, 'i')
-        .replace(/[óòõôö]/gi, 'o')
-        .replace(/[úùûü]/gi, 'u')
-        .replace(/[ç]/gi, 'c')
-    }
-
-    // Nova função de mapeamento de colunas que ignora acentos, espaços extras e letras maiúsculas/minúsculas
     var getVal = function (row, aliases) {
       if (!Array.isArray(aliases)) aliases = [aliases]
       for (var a = 0; a < aliases.length; a++) {
-        var aliasNorm = removeAccents(aliases[a].toLowerCase().trim())
+        var aliasNorm = aliases[a].toLowerCase().trim()
         var idx = -1
         for (var h = 0; h < headers.length; h++) {
-          var headerNorm = removeAccents(headers[h].toLowerCase().trim())
+          var headerNorm = headers[h].toLowerCase().trim()
           if (headerNorm === aliasNorm) {
             idx = h
             break
@@ -126,39 +115,30 @@ routerAdd(
 
       var row = parseCSVLine(lines[i], delimiter)
 
-      // Adicionados nomes das colunas exatamente como a Hotmart costuma enviar nas planilhas recentes
-      var nomeProduto = getVal(row, ['Nome do Produto', 'Produto', 'Product Name'])
-      var transacao = getVal(row, ['Código da transação', 'Transação', 'Venda', 'Transaction'])
-      var meioPagamento = getVal(row, ['Meio de pagamento', 'Forma de Pagamento', 'Payment Method'])
-      var moeda = getVal(row, ['Moeda', 'Currency'])
-      var precoTotal = parseBrazilianNumber(
-        getVal(row, ['Preço', 'Valor', 'Preço Total', 'Preço da Oferta']),
+      // Mapeamento EXATO baseado nos nomes de colunas que você enviou
+      var transacao = getVal(row, ['Código da transação'])
+      var status = getVal(row, ['Status da transação'])
+      var dataVenda = parseDate(getVal(row, ['Data da transação']))
+      var nomeProduto = getVal(row, ['Produto'])
+      var nome = getVal(row, ['Comprador(a)'])
+      var email = getVal(row, ['Email do(a) Comprador(a)'])
+      var telefone = normalizePhone(getVal(row, ['Telefone']))
+      var documento = getVal(row, ['Documento'])
+      var cidade = getVal(row, ['Cidade'])
+      var estado = getVal(row, ['Estado / Província'])
+      var meioPagamento = getVal(row, ['Método de pagamento'])
+
+      var parcelasStr = getVal(row, ['Quantidade total de parcelas'])
+      var parcelas = parseInt(parcelasStr, 10)
+      if (isNaN(parcelas)) parcelas = 0
+
+      var precoTotal = parseBrazilianNumber(getVal(row, ['Valor de compra com impostos']))
+      var moeda = getVal(row, ['Moeda de compra'])
+      var comissaoProdutor = parseBrazilianNumber(
+        getVal(row, ['Faturamento líquido do(a) Produtor(a)']),
       )
-      var status = getVal(row, ['Status da transação', 'Status', 'Status da Compra'])
-      var dataVenda = parseDate(
-        getVal(row, [
-          'Data de Venda',
-          'Data da Venda',
-          'Data do Pedido',
-          'Data',
-          'Data de confirmação',
-        ]),
-      )
-      var nome = getVal(row, ['Nome do Comprador', 'Nome', 'Comprador', 'Buyer Name'])
-      var email = getVal(row, ['Email do Comprador', 'Email', 'E-mail'])
-      var documento = getVal(row, [
-        'Documento do Comprador',
-        'Documento',
-        'CPF',
-        'CNPJ',
-        'CPF/CNPJ',
-      ])
-      var telefone = normalizePhone(
-        getVal(row, ['Telefone do Comprador', 'Telefone', 'Telefone de Contato', 'Celular']),
-      )
-      var cep = getVal(row, ['CEP', 'Código Postal', 'Zip Code'])
-      var cidade = getVal(row, ['Cidade', 'City'])
-      var estado = getVal(row, ['Estado', 'UF', 'State'])
+      var nomeAfiliado = getVal(row, ['Nome do(a) Afiliado(a)'])
+      var valorFrete = parseBrazilianNumber(getVal(row, ['Valor do frete bruto']))
 
       try {
         var vendasRecord = null
@@ -171,23 +151,25 @@ routerAdd(
           vendasRecord = new Record(vendasCol)
         }
 
-        vendasRecord.set('nome_produto', nomeProduto)
+        // Salvando os dados exatos na base vendas_hotmart
+        vendasRecord.set('tipo_evento', 'IMPORTED')
         vendasRecord.set('transacao', transacao)
-        vendasRecord.set('meio_pagamento', meioPagamento)
-        vendasRecord.set('moeda', moeda)
-        vendasRecord.set('preco_total', precoTotal)
         vendasRecord.set('status_compra', status)
         vendasRecord.set('data_pedido', dataVenda)
+        vendasRecord.set('nome_produto', nomeProduto)
         vendasRecord.set('nome_comprador', nome)
         vendasRecord.set('email_comprador', email)
         vendasRecord.set('telefone_comprador', telefone)
         vendasRecord.set('documento_comprador', documento)
         vendasRecord.set('cidade_comprador', cidade)
         vendasRecord.set('estado_comprador', estado)
-
-        // Regra que você pediu: tipo_evento espelhando o "Status da transação" (ou "IMPORTED" se vazio)
-        vendasRecord.set('tipo_evento', status || 'IMPORTED')
-        vendasRecord.set('parcelas', 0)
+        vendasRecord.set('meio_pagamento', meioPagamento)
+        vendasRecord.set('parcelas', parcelas)
+        vendasRecord.set('preco_total', precoTotal)
+        vendasRecord.set('moeda', moeda)
+        vendasRecord.set('comissao_produtor', comissaoProdutor)
+        vendasRecord.set('nome_afiliado', nomeAfiliado)
+        vendasRecord.set('valor_frete', valorFrete)
 
         var lead = null
         if (email || telefone) {
@@ -199,7 +181,6 @@ routerAdd(
           } catch (_) {}
         }
 
-        // Verifica o status ignorando letras minúsculas para não gerar erro
         var statusCheck = (status || '').toUpperCase()
 
         if (!lead && (email || telefone)) {
@@ -250,10 +231,11 @@ routerAdd(
           cliente.set('Telefone', telefone)
           cliente.set('Cidade', cidade)
           cliente.set('UF', estado)
-          cliente.set('CEP', cep)
+          cliente.set('CEP', getVal(row, ['Código postal']))
           cliente.set('Nome_Prod', nomeProduto)
           cliente.set('Tp_Pgto', meioPagamento)
           cliente.set('Vlr_Pago', precoTotal)
+
           if (lead) {
             cliente.set('Vend_Resp_Lead', lead.id)
             var vendRespUser = lead.getString('vend_resp')
