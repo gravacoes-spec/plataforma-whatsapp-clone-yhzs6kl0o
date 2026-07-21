@@ -13,7 +13,16 @@ routerAdd(
       csvText = csvText.slice(1)
     }
 
-    var parseCSVLine = function (line) {
+    var lines = csvText.split(/\r?\n/)
+    if (lines.length < 2) {
+      return e.badRequestError('CSV must have a header row and at least one data row')
+    }
+
+    // 1. DETECÇÃO INTELIGENTE DO DELIMITADOR (Vírgula ou Ponto e Vírgula)
+    var delimiter = lines[0].indexOf(';') > -1 ? ';' : ','
+
+    // 2. FUNÇÃO ATUALIZADA PARA USAR O DELIMITADOR DETECTADO
+    var parseCSVLine = function (line, delim) {
       var result = []
       var current = ''
       var inQuotes = false
@@ -26,7 +35,7 @@ routerAdd(
           } else {
             inQuotes = !inQuotes
           }
-        } else if (char === ',' && !inQuotes) {
+        } else if (char === delim && !inQuotes) {
           result.push(current)
           current = ''
         } else {
@@ -71,20 +80,22 @@ routerAdd(
       return String(phone).replace(/\D/g, '')
     }
 
-    var lines = csvText.split(/\r?\n/)
-    if (lines.length < 2) {
-      return e.badRequestError('CSV must have a header row and at least one data row')
-    }
-
-    var headers = parseCSVLine(lines[0])
+    var headers = parseCSVLine(lines[0], delimiter)
     for (var h = 0; h < headers.length; h++) {
       headers[h] = headers[h].trim()
     }
 
+    // 3. FUNÇÃO MAIS FLEXÍVEL PARA ENCONTRAR COLUNAS (Ignora Case)
     var getVal = function (row, aliases) {
       if (!Array.isArray(aliases)) aliases = [aliases]
       for (var a = 0; a < aliases.length; a++) {
-        var idx = headers.indexOf(aliases[a])
+        var idx = -1
+        for (var h = 0; h < headers.length; h++) {
+          if (headers[h].toLowerCase() === aliases[a].toLowerCase()) {
+            idx = h
+            break
+          }
+        }
         if (idx !== -1) return (row[idx] || '').trim()
       }
       return ''
@@ -101,10 +112,17 @@ routerAdd(
     for (var i = 1; i < lines.length; i++) {
       if (!lines[i].trim()) continue
 
-      var row = parseCSVLine(lines[i])
+      var row = parseCSVLine(lines[i], delimiter)
 
-      var nomeProduto = getVal(row, ['Nome do Produto', 'Product Name', 'Produto', 'Product'])
-      var transacao = getVal(row, ['Transação', 'Transaction', 'Venda', 'Order'])
+      // 4. MAPES COM VARIAÇÕES SEM ACENTO PARA GARANTIR A LEITURA
+      var nomeProduto = getVal(row, [
+        'Nome do Produto',
+        'Nome do produto',
+        'Product Name',
+        'Produto',
+        'Product',
+      ])
+      var transacao = getVal(row, ['Transação', 'Transacao', 'Transaction', 'Venda', 'Order'])
       var meioPagamento = getVal(row, [
         'Meio de Pagamento',
         'Payment Method',
@@ -113,14 +131,34 @@ routerAdd(
       ])
       var moeda = getVal(row, ['Moeda', 'Currency'])
       var precoTotal = parseBrazilianNumber(
-        getVal(row, ['Preço Total', 'Preço', 'Total Price', 'Vlr_Pago', 'Valor', 'Price']),
+        getVal(row, [
+          'Preço Total',
+          'Preco Total',
+          'Preço',
+          'Total Price',
+          'Vlr_Pago',
+          'Valor',
+          'Price',
+        ]),
       )
       var status = getVal(row, ['Status', 'Status da Compra', 'Purchase Status'])
-      var dataVenda = parseDate(getVal(row, ['Data de Venda', 'Purchase Date', 'Data', 'Date']))
+      var dataVenda = parseDate(
+        getVal(row, [
+          'Data de Venda',
+          'Data de venda',
+          'Purchase Date',
+          'Data',
+          'Date',
+          'Data da compra',
+          'Data de compra',
+        ]),
+      )
       var nome = getVal(row, ['Nome', 'Nome do Comprador', 'Buyer Name', 'Name'])
       var email = getVal(row, ['Email', 'E-mail', 'Buyer Email'])
-      var documento = getVal(row, ['Documento', 'CPF/CNPJ', 'Document', 'CPF'])
-      var telefone = normalizePhone(getVal(row, ['Telefone', 'Phone', 'Celular', 'Mobile']))
+      var documento = getVal(row, ['Documento', 'CPF/CNPJ', 'Document', 'CPF', 'CNPJ'])
+      var telefone = normalizePhone(
+        getVal(row, ['Telefone', 'Phone', 'Celular', 'Mobile', 'Telefone de Contato']),
+      )
       var cep = getVal(row, ['CEP', 'Zip Code', 'ZipCode'])
       var cidade = getVal(row, ['Cidade', 'City'])
       var estado = getVal(row, ['Estado', 'State', 'UF'])
