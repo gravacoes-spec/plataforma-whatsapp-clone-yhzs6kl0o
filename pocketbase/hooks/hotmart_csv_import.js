@@ -18,10 +18,9 @@ routerAdd(
       return e.badRequestError('CSV must have a header row and at least one data row')
     }
 
-    // 1. DETECÇÃO INTELIGENTE DO DELIMITADOR (Vírgula ou Ponto e Vírgula)
+    // Identifica o delimitador automaticamente
     var delimiter = lines[0].indexOf(';') > -1 ? ';' : ','
 
-    // 2. FUNÇÃO ATUALIZADA PARA USAR O DELIMITADOR DETECTADO
     var parseCSVLine = function (line, delim) {
       var result = []
       var current = ''
@@ -85,13 +84,26 @@ routerAdd(
       headers[h] = headers[h].trim()
     }
 
-    // 3. FUNÇÃO MAIS FLEXÍVEL PARA ENCONTRAR COLUNAS (Ignora Case)
+    // Função para remover acentos e facilitar a busca independente do que a Hotmart enviar
+    var removeAccents = function (str) {
+      return str
+        .replace(/[áàãâä]/gi, 'a')
+        .replace(/[éèêë]/gi, 'e')
+        .replace(/[íìîï]/gi, 'i')
+        .replace(/[óòõôö]/gi, 'o')
+        .replace(/[úùûü]/gi, 'u')
+        .replace(/[ç]/gi, 'c')
+    }
+
+    // Nova função de mapeamento de colunas que ignora acentos, espaços extras e letras maiúsculas/minúsculas
     var getVal = function (row, aliases) {
       if (!Array.isArray(aliases)) aliases = [aliases]
       for (var a = 0; a < aliases.length; a++) {
+        var aliasNorm = removeAccents(aliases[a].toLowerCase().trim())
         var idx = -1
         for (var h = 0; h < headers.length; h++) {
-          if (headers[h].toLowerCase() === aliases[a].toLowerCase()) {
+          var headerNorm = removeAccents(headers[h].toLowerCase().trim())
+          if (headerNorm === aliasNorm) {
             idx = h
             break
           }
@@ -114,54 +126,39 @@ routerAdd(
 
       var row = parseCSVLine(lines[i], delimiter)
 
-      // 4. MAPES COM VARIAÇÕES SEM ACENTO PARA GARANTIR A LEITURA
-      var nomeProduto = getVal(row, [
-        'Nome do Produto',
-        'Nome do produto',
-        'Product Name',
-        'Produto',
-        'Product',
-      ])
-      var transacao = getVal(row, ['Transação', 'Transacao', 'Transaction', 'Venda', 'Order'])
-      var meioPagamento = getVal(row, [
-        'Meio de Pagamento',
-        'Payment Method',
-        'Forma de Pagamento',
-        'Payment Type',
-      ])
+      // Adicionados nomes das colunas exatamente como a Hotmart costuma enviar nas planilhas recentes
+      var nomeProduto = getVal(row, ['Nome do Produto', 'Produto', 'Product Name'])
+      var transacao = getVal(row, ['Código da transação', 'Transação', 'Venda', 'Transaction'])
+      var meioPagamento = getVal(row, ['Meio de pagamento', 'Forma de Pagamento', 'Payment Method'])
       var moeda = getVal(row, ['Moeda', 'Currency'])
       var precoTotal = parseBrazilianNumber(
-        getVal(row, [
-          'Preço Total',
-          'Preco Total',
-          'Preço',
-          'Total Price',
-          'Vlr_Pago',
-          'Valor',
-          'Price',
-        ]),
+        getVal(row, ['Preço', 'Valor', 'Preço Total', 'Preço da Oferta']),
       )
-      var status = getVal(row, ['Status', 'Status da Compra', 'Purchase Status'])
+      var status = getVal(row, ['Status da transação', 'Status', 'Status da Compra'])
       var dataVenda = parseDate(
         getVal(row, [
           'Data de Venda',
-          'Data de venda',
-          'Purchase Date',
+          'Data da Venda',
+          'Data do Pedido',
           'Data',
-          'Date',
-          'Data da compra',
-          'Data de compra',
+          'Data de confirmação',
         ]),
       )
-      var nome = getVal(row, ['Nome', 'Nome do Comprador', 'Buyer Name', 'Name'])
-      var email = getVal(row, ['Email', 'E-mail', 'Buyer Email'])
-      var documento = getVal(row, ['Documento', 'CPF/CNPJ', 'Document', 'CPF', 'CNPJ'])
+      var nome = getVal(row, ['Nome do Comprador', 'Nome', 'Comprador', 'Buyer Name'])
+      var email = getVal(row, ['Email do Comprador', 'Email', 'E-mail'])
+      var documento = getVal(row, [
+        'Documento do Comprador',
+        'Documento',
+        'CPF',
+        'CNPJ',
+        'CPF/CNPJ',
+      ])
       var telefone = normalizePhone(
-        getVal(row, ['Telefone', 'Phone', 'Celular', 'Mobile', 'Telefone de Contato']),
+        getVal(row, ['Telefone do Comprador', 'Telefone', 'Telefone de Contato', 'Celular']),
       )
-      var cep = getVal(row, ['CEP', 'Zip Code', 'ZipCode'])
+      var cep = getVal(row, ['CEP', 'Código Postal', 'Zip Code'])
       var cidade = getVal(row, ['Cidade', 'City'])
-      var estado = getVal(row, ['Estado', 'State', 'UF'])
+      var estado = getVal(row, ['Estado', 'UF', 'State'])
 
       try {
         var vendasRecord = null
@@ -187,7 +184,9 @@ routerAdd(
         vendasRecord.set('documento_comprador', documento)
         vendasRecord.set('cidade_comprador', cidade)
         vendasRecord.set('estado_comprador', estado)
-        vendasRecord.set('tipo_evento', 'IMPORTED')
+
+        // Regra que você pediu: tipo_evento espelhando o "Status da transação" (ou "IMPORTED" se vazio)
+        vendasRecord.set('tipo_evento', status || 'IMPORTED')
         vendasRecord.set('parcelas', 0)
 
         var lead = null
@@ -200,6 +199,9 @@ routerAdd(
           } catch (_) {}
         }
 
+        // Verifica o status ignorando letras minúsculas para não gerar erro
+        var statusCheck = (status || '').toUpperCase()
+
         if (!lead && (email || telefone)) {
           lead = new Record(leadsCol)
           lead.set('name', nome)
@@ -209,10 +211,10 @@ routerAdd(
           $app.saveNoValidate(lead)
         } else if (
           lead &&
-          (status === 'APPROVED' ||
-            status === 'COMPLETE' ||
-            status === 'Aprovada' ||
-            status === 'Completa')
+          (statusCheck === 'APPROVED' ||
+            statusCheck === 'COMPLETE' ||
+            statusCheck === 'APROVADA' ||
+            statusCheck === 'COMPLETA')
         ) {
           lead.set('etapa_pipeline', '8. Venda Realizada')
           $app.saveNoValidate(lead)
@@ -226,10 +228,10 @@ routerAdd(
         imported++
 
         if (
-          status === 'APPROVED' ||
-          status === 'COMPLETE' ||
-          status === 'Aprovada' ||
-          status === 'Completa'
+          statusCheck === 'APPROVED' ||
+          statusCheck === 'COMPLETE' ||
+          statusCheck === 'APROVADA' ||
+          statusCheck === 'COMPLETA'
         ) {
           var cliente = null
           if (email || telefone) {
