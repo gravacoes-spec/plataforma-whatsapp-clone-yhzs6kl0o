@@ -209,7 +209,7 @@ export default function Index() {
     <div className="flex-1 flex flex-col h-full bg-slate-50/50 overflow-y-auto">
       <div className="sticky top-0 z-10 flex items-center justify-between border-b border-zinc-200/60 bg-white/80 backdrop-blur-md px-8 py-4 bg-[#052136] text-[#ffff] text-[#ffff]">
         <div className="flex flex-col">
-          <h1 className="text-2xl font-bold tracking-tight text-[#ffff] text-[#000000] bg-[#ffff]">
+          <h1 className="text-2xl font-bold tracking-tight text-[#ffff] bg-[#ffff] text-[#0f0f0f]">
             Dashboard de Vendas
           </h1>
           <p className="text-sm text-zinc-500">
@@ -217,7 +217,7 @@ export default function Index() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 bg-white border border-zinc-200 rounded-lg p-1 shadow-sm">
+          <div className="flex items-center gap-2 bg-white border border-zinc-200 rounded-lg p-1 shadow-sm text-[#060505]">
             <Filter className="h-4 w-4 text-zinc-400 ml-2" />
             <Select value={period} onValueChange={setPeriod}>
               <SelectTrigger className="w-[130px] border-0 focus:ring-0 h-8 shadow-none bg-transparent">
