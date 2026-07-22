@@ -13,8 +13,9 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { useToast } from '@/hooks/use-toast'
-import { MessageSquare, Loader2 } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
 import { getErrorMessage } from '@/lib/pocketbase/errors'
+import logoUrl from '@/assets/logopfsfundo-562b4.png'
 
 export default function Login() {
   const [email, setEmail] = useState('')
@@ -45,11 +46,15 @@ export default function Login() {
     <div className="flex-1 flex items-center justify-center bg-slate-50 px-4">
       <div className="w-full max-w-md animate-fade-in-up">
         <div className="flex flex-col items-center mb-8">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-violet-600 shadow-lg shadow-violet-600/20 mb-4">
-            <MessageSquare className="h-6 w-6 text-white" />
+          <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-slate-900 shadow-lg shadow-blue-600/20 mb-4 overflow-hidden p-1">
+            <img
+              src={logoUrl}
+              alt="CRM Perícia Foco Logo"
+              className="h-full w-full object-contain"
+            />
           </div>
           <h1 className="text-2xl font-bold text-slate-900">Bem-vindo de volta</h1>
-          <p className="text-slate-500">Faça login para acessar sua caixa de entrada do WhatsApp</p>
+          <p className="text-slate-500">Faça login para acessar o CRM Perícia Foco</p>
         </div>
 
         <Card className="border-slate-200 shadow-xl shadow-slate-200/50">
@@ -68,7 +73,7 @@ export default function Login() {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="focus-visible:ring-violet-600"
+                  className="focus-visible:ring-blue-600"
                 />
               </div>
               <div className="space-y-2">
@@ -79,14 +84,14 @@ export default function Login() {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="focus-visible:ring-violet-600"
+                  className="focus-visible:ring-blue-600"
                 />
               </div>
             </CardContent>
             <CardFooter className="flex flex-col gap-4">
               <Button
                 type="submit"
-                className="w-full bg-violet-600 hover:bg-violet-700 text-white"
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white"
                 disabled={loading}
               >
                 {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
@@ -96,7 +101,7 @@ export default function Login() {
                 Não possui uma conta?{' '}
                 <Link
                   to="/register"
-                  className="font-medium text-violet-600 hover:text-violet-700 hover:underline"
+                  className="font-medium text-blue-600 hover:text-blue-700 hover:underline"
                 >
                   Cadastrar-se
                 </Link>

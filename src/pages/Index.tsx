@@ -137,7 +137,6 @@ export default function Index() {
       )
     })
 
-    // CORRIGIDO: Retornando para preco_total ao invés de comissao_produtor
     const fatTotal = validVendas.reduce((acc, v) => acc + (v.preco_total || 0), 0)
     const qtVendas = validVendas.length
     const leadsTotais = filteredLeads.length
@@ -201,7 +200,7 @@ export default function Index() {
   if (loading) {
     return (
       <div className="flex h-full items-center justify-center bg-zinc-50">
-        <Loader2 className="h-6 w-6 animate-spin text-violet-500" />
+        <Loader2 className="h-6 w-6 animate-spin text-blue-500" />
       </div>
     )
   }
@@ -310,7 +309,7 @@ export default function Index() {
               <CardTitle className="text-[13px] font-medium text-zinc-500">
                 Conversão Geral
               </CardTitle>
-              <div className="h-8 w-8 bg-violet-100 text-violet-600 rounded-lg flex items-center justify-center">
+              <div className="h-8 w-8 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center">
                 <TrendingUp className="h-4 w-4" />
               </div>
             </CardHeader>

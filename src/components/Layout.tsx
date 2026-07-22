@@ -31,6 +31,7 @@ import {
   SidebarTrigger,
   SidebarInset,
 } from '@/components/ui/sidebar'
+import logoUrl from '@/assets/logopfsfundo-562b4.png'
 
 export default function Layout() {
   const { user, signOut, loading } = useAuth()
@@ -63,7 +64,7 @@ export default function Layout() {
   if (loading) {
     return (
       <div className="flex h-screen items-center justify-center bg-zinc-50">
-        <Loader2 className="h-7 w-7 animate-spin text-violet-500" />
+        <Loader2 className="h-7 w-7 animate-spin text-blue-500" />
       </div>
     )
   }
@@ -74,16 +75,22 @@ export default function Layout() {
         <header className="sticky top-0 z-50 w-full border-b bg-white/80 backdrop-blur-sm">
           <div className="container flex h-16 items-center justify-between">
             <Link to="/" className="flex items-center gap-2">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-violet-600 shadow-sm shadow-violet-500/20">
-                <MessageSquare className="h-[18px] w-[18px] text-white" />
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-900 shadow-sm shadow-blue-500/20 overflow-hidden p-0.5">
+                <img
+                  src={logoUrl}
+                  alt="CRM Perícia Foco Logo"
+                  className="h-full w-full object-contain"
+                />
               </div>
-              <span className="text-xl font-bold tracking-tight text-slate-900">ZappFlow</span>
+              <span className="text-xl font-bold tracking-tight text-slate-900">
+                CRM Perícia Foco
+              </span>
             </Link>
             <nav className="flex items-center gap-4">
               <Button variant="ghost" asChild>
                 <Link to="/login">Entrar</Link>
               </Button>
-              <Button className="bg-violet-500 hover:bg-violet-600" asChild>
+              <Button className="bg-blue-600 hover:bg-blue-700" asChild>
                 <Link to="/register">Começar Agora</Link>
               </Button>
             </nav>
@@ -127,8 +134,12 @@ export default function Layout() {
       <Sidebar variant="inset" className="border-r border-zinc-200/70 bg-white">
         <SidebarHeader className="px-4 pb-5 pt-6">
           <div className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-violet-600 shadow-sm shadow-violet-500/20">
-              <MessageSquare className="h-[18px] w-[18px] text-white" />
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-900 shadow-sm shadow-blue-500/20 overflow-hidden p-0.5">
+              <img
+                src={logoUrl}
+                alt="CRM Perícia Foco Logo"
+                className="h-full w-full object-contain"
+              />
             </div>
             <span className="text-[17px] font-semibold tracking-tight text-zinc-900">
               CRM Perícia Foco
@@ -150,14 +161,12 @@ export default function Layout() {
                     className={cn(
                       'h-9 rounded-lg px-2.5 text-[13.5px] font-medium transition-colors',
                       active
-                        ? 'bg-violet-50 text-violet-700 hover:bg-violet-50 hover:text-violet-700'
+                        ? 'bg-blue-50 text-blue-700 hover:bg-blue-50 hover:text-blue-700'
                         : 'text-zinc-600 hover:bg-zinc-100/70 hover:text-zinc-900',
                     )}
                   >
                     <Link to={to}>
-                      <Icon
-                        className={cn('h-4 w-4', active ? 'text-violet-600' : 'text-zinc-400')}
-                      />
+                      <Icon className={cn('h-4 w-4', active ? 'text-blue-600' : 'text-zinc-400')} />
                       <span>{label}</span>
                     </Link>
                   </SidebarMenuButton>
@@ -177,7 +186,7 @@ export default function Layout() {
                 className={cn(
                   'h-9 rounded-lg px-2.5 text-[13.5px] font-medium transition-colors',
                   location.pathname === '/hotmart'
-                    ? 'bg-violet-50 text-violet-700 hover:bg-violet-50 hover:text-violet-700'
+                    ? 'bg-blue-50 text-blue-700 hover:bg-blue-50 hover:text-blue-700'
                     : 'text-zinc-600 hover:bg-zinc-100/70 hover:text-zinc-900',
                 )}
               >
@@ -185,7 +194,7 @@ export default function Layout() {
                   <ShoppingBag
                     className={cn(
                       'h-4 w-4',
-                      location.pathname === '/hotmart' ? 'text-violet-600' : 'text-zinc-400',
+                      location.pathname === '/hotmart' ? 'text-blue-600' : 'text-zinc-400',
                     )}
                   />
                   <span>Logs de Webhook</span>
@@ -208,14 +217,12 @@ export default function Layout() {
                     className={cn(
                       'h-9 rounded-lg px-2.5 text-[13.5px] font-medium transition-colors',
                       active
-                        ? 'bg-violet-50 text-violet-700 hover:bg-violet-50 hover:text-violet-700'
+                        ? 'bg-blue-50 text-blue-700 hover:bg-blue-50 hover:text-blue-700'
                         : 'text-zinc-600 hover:bg-zinc-100/70 hover:text-zinc-900',
                     )}
                   >
                     <Link to={to}>
-                      <Icon
-                        className={cn('h-4 w-4', active ? 'text-violet-600' : 'text-zinc-400')}
-                      />
+                      <Icon className={cn('h-4 w-4', active ? 'text-blue-600' : 'text-zinc-400')} />
                       <span>{label}</span>
                     </Link>
                   </SidebarMenuButton>
@@ -229,7 +236,7 @@ export default function Layout() {
                 className={cn(
                   'h-9 rounded-lg px-2.5 text-[13.5px] font-medium transition-colors',
                   location.pathname === '/connection-setup'
-                    ? 'bg-violet-50 text-violet-700 hover:bg-violet-50 hover:text-violet-700'
+                    ? 'bg-blue-50 text-blue-700 hover:bg-blue-50 hover:text-blue-700'
                     : 'text-zinc-600 hover:bg-zinc-100/70 hover:text-zinc-900',
                 )}
               >
@@ -237,9 +244,7 @@ export default function Layout() {
                   <Settings2
                     className={cn(
                       'h-4 w-4',
-                      location.pathname === '/connection-setup'
-                        ? 'text-violet-600'
-                        : 'text-zinc-400',
+                      location.pathname === '/connection-setup' ? 'text-blue-600' : 'text-zinc-400',
                     )}
                   />
                   <span>Conexão</span>
@@ -282,7 +287,7 @@ export default function Layout() {
       <SidebarInset className="bg-zinc-50/60">
         <header className="flex h-14 shrink-0 items-center gap-2 border-b border-zinc-200/70 bg-white px-4 md:hidden">
           <SidebarTrigger />
-          <span className="font-semibold tracking-tight text-zinc-900">ZappFlow</span>
+          <span className="font-semibold tracking-tight text-zinc-900">CRM Perícia Foco</span>
         </header>
         <div className="flex flex-1 flex-col overflow-hidden">
           <Outlet />

@@ -13,7 +13,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { useToast } from '@/hooks/use-toast'
-import { MessageSquare, Loader2 } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
 import { extractFieldErrors } from '@/lib/pocketbase/errors'
 import {
   Select,
@@ -22,6 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import logoUrl from '@/assets/logopfsfundo-562b4.png'
 
 export default function Register() {
   const [name, setName] = useState('')
@@ -82,11 +83,15 @@ export default function Register() {
     <div className="flex-1 flex items-center justify-center bg-slate-50 px-4 py-12">
       <div className="w-full max-w-md animate-fade-in-up">
         <div className="flex flex-col items-center mb-8">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-violet-600 shadow-lg shadow-violet-600/20 mb-4">
-            <MessageSquare className="h-6 w-6 text-white" />
+          <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-slate-900 shadow-lg shadow-blue-600/20 mb-4 overflow-hidden p-1">
+            <img
+              src={logoUrl}
+              alt="CRM Perícia Foco Logo"
+              className="h-full w-full object-contain"
+            />
           </div>
           <h1 className="text-2xl font-bold text-slate-900">Criar uma conta</h1>
-          <p className="text-slate-500">Comece a conectar seu WhatsApp hoje</p>
+          <p className="text-slate-500">Acesse o CRM Perícia Foco</p>
         </div>
 
         <Card className="border-slate-200 shadow-xl shadow-slate-200/50">
@@ -104,7 +109,7 @@ export default function Register() {
                   required
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="focus-visible:ring-violet-600"
+                  className="focus-visible:ring-blue-600"
                 />
                 {errors.name && <p className="text-xs text-red-500">{errors.name}</p>}
               </div>
@@ -117,7 +122,7 @@ export default function Register() {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="focus-visible:ring-violet-600"
+                  className="focus-visible:ring-blue-600"
                 />
                 {errors.email && <p className="text-xs text-red-500">{errors.email}</p>}
               </div>
@@ -129,7 +134,7 @@ export default function Register() {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="focus-visible:ring-violet-600"
+                  className="focus-visible:ring-blue-600"
                 />
                 {errors.password && <p className="text-xs text-red-500">{errors.password}</p>}
               </div>
@@ -141,7 +146,7 @@ export default function Register() {
                   required
                   value={passwordConfirm}
                   onChange={(e) => setPasswordConfirm(e.target.value)}
-                  className="focus-visible:ring-violet-600"
+                  className="focus-visible:ring-blue-600"
                 />
                 {errors.passwordConfirm && (
                   <p className="text-xs text-red-500">{errors.passwordConfirm}</p>
@@ -150,7 +155,7 @@ export default function Register() {
               <div className="space-y-2">
                 <Label>Perfil de Acesso</Label>
                 <Select value={perfilAcess} onValueChange={setPerfilAcess}>
-                  <SelectTrigger className="focus:ring-violet-600">
+                  <SelectTrigger className="focus:ring-blue-600">
                     <SelectValue placeholder="Selecione um perfil" />
                   </SelectTrigger>
                   <SelectContent>
@@ -163,7 +168,7 @@ export default function Register() {
             <CardFooter className="flex flex-col gap-4">
               <Button
                 type="submit"
-                className="w-full bg-violet-600 hover:bg-violet-700 text-white"
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white"
                 disabled={loading}
               >
                 {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
@@ -173,7 +178,7 @@ export default function Register() {
                 Já possui uma conta?{' '}
                 <Link
                   to="/login"
-                  className="font-medium text-violet-600 hover:text-violet-700 hover:underline"
+                  className="font-medium text-blue-600 hover:text-blue-700 hover:underline"
                 >
                   Entrar
                 </Link>

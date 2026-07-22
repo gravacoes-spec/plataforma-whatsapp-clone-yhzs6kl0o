@@ -9,7 +9,7 @@
 
 @layer base {
   :root {
-    /* Change the colors to match the design system */
+    /* Updated theme based on Perícia Foco branding (deep blues, metallic, dark accents) */
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
 
@@ -19,7 +19,7 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
 
-    --primary: 222.2 84% 4.9%;
+    --primary: 217 91% 60%;
     --primary-foreground: 210 40% 98%;
 
     --secondary: 210 40% 98%;
@@ -36,35 +36,28 @@
 
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --ring: 217 91% 60%;
 
     --radius: 0.5rem;
 
     --sidebar-background: 0 0% 98%;
-
     --sidebar-foreground: 222.2 84% 4.9%;
-
-    --sidebar-primary: 222.2 84% 4.9%;
-
+    --sidebar-primary: 217 91% 60%;
     --sidebar-primary-foreground: 0 0% 100%;
-
     --sidebar-accent: 210 40% 98%;
-
     --sidebar-accent-foreground: 222.2 84% 4.9%;
-
     --sidebar-border: 214.3 31.8% 91.4%;
+    --sidebar-ring: 217 91% 60%;
 
-    --sidebar-ring: 222.2 84% 4.9%;
-
-    --chart-1: 34 100% 44%;
-    --chart-2: 189 100% 38%;
-    --chart-3: 209 100% 32%;
-    --chart-4: 42 100% 50%;
-    --chart-5: 33 100% 50%;
+    --chart-1: 217 91% 60%;
+    --chart-2: 210 100% 45%;
+    --chart-3: 199 89% 48%;
+    --chart-4: 220 80% 40%;
+    --chart-5: 230 70% 30%;
   }
 
   .dark {
-    /* Change the colors to match the design system consistent with the dark mode */
+    /* Updated dark theme */
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
 
@@ -74,7 +67,7 @@
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 210 40% 98%;
+    --primary: 217 91% 60%;
     --primary-foreground: 222.2 84% 4.9%;
 
     --secondary: 222.2 84% 4.9%;
@@ -91,21 +84,22 @@
 
     --border: 222.2 84% 4.9%;
     --input: 222.2 84% 4.9%;
-    --ring: 214.3 31.8% 91.4%;
+    --ring: 217 91% 60%;
+
     --sidebar-background: 222.2 84% 4.9%;
     --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 222.2 84% 4.9%;
+    --sidebar-primary: 217 91% 60%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 222.2 84% 4.9%;
     --sidebar-accent-foreground: 210 40% 98%;
     --sidebar-border: 222.2 84% 4.9%;
-    --sidebar-ring: 222.2 84% 4.9%;
+    --sidebar-ring: 217 91% 60%;
 
-    --chart-1: 270 100% 44%;
-    --chart-2: 164 100% 38%;
-    --chart-3: 43 100% 32%;
-    --chart-4: 340 100% 50%;
-    --chart-5: 10 100% 50%;
+    --chart-1: 217 91% 60%;
+    --chart-2: 210 100% 50%;
+    --chart-3: 199 89% 55%;
+    --chart-4: 220 80% 65%;
+    --chart-5: 230 70% 70%;
   }
 
   /* NEVER REMOVE THIS */
