@@ -209,7 +209,7 @@ export default function Index() {
     <div className="flex-1 flex flex-col h-full bg-slate-50/50 overflow-y-auto">
       <div className="sticky top-0 z-10 flex items-center justify-between border-b border-zinc-200/60 bg-white/80 backdrop-blur-md px-8 py-4 bg-[#052136] text-[#ffff] text-[#ffff]">
         <div className="flex flex-col">
-          <h1 className="text-2xl font-bold tracking-tight text-[#ffff] bg-[#ffff] text-[#000000]">
+          <h1 className="text-2xl font-bold tracking-tight text-[#ffff] bg-[#ffff] text-[#000000] not-italic">
             Dashboard de Vendas
           </h1>
           <p className="text-sm text-zinc-500">
