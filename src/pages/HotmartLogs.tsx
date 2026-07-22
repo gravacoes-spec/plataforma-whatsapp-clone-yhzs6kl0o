@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
-import { getWebhookLogs, clearAllVendas } from '@/services/hotmart'
+import { getWebhookLogs } from '@/services/hotmart'
 import { PageHeader } from '@/components/ui/page-header'
 import {
   Table,
@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/table'
 import { format, parseISO } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import { Loader2, Eye, Upload, Trash2 } from 'lucide-react'
+import { Loader2, Eye, Upload } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
 import { importHotmartCsv } from '@/services/hotmart-import'
@@ -22,16 +22,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
 import { useRealtime } from '@/hooks/use-realtime'
 import { useAuth } from '@/hooks/use-auth'
 
@@ -39,9 +29,8 @@ export default function HotmartLogs() {
   const [logs, setLogs] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [importing, setImporting] = useState(false)
-  const [clearing, setClearing] = useState(false)
-  const [clearDialogOpen, setClearDialogOpen] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
   const { isAuthenticated, loading: authLoading } = useAuth()
 
   const loadLogs = useCallback(async () => {
@@ -83,20 +72,6 @@ export default function HotmartLogs() {
     }
   }
 
-  const handleClearVendas = async () => {
-    setClearing(true)
-    try {
-      const result = await clearAllVendas()
-      toast.success('Registros de vendas removidos com sucesso!')
-      setClearDialogOpen(false)
-    } catch (err) {
-      toast.error('Erro ao limpar registros de vendas')
-      console.error(err)
-    } finally {
-      setClearing(false)
-    }
-  }
-
   if (loading) {
     return (
       <div className="flex h-full items-center justify-center">
@@ -111,6 +86,7 @@ export default function HotmartLogs() {
         title="Logs de Webhook - Hotmart"
         description="Últimas 10 notificações recebidas"
       />
+
       <div className="px-8 pb-8 flex-1 flex flex-col">
         <div className="flex justify-end mb-4 gap-2">
           <input
@@ -132,47 +108,8 @@ export default function HotmartLogs() {
             )}
             Importar CSV
           </Button>
-          <AlertDialog open={clearDialogOpen} onOpenChange={setClearDialogOpen}>
-            <AlertDialogAction className="hidden" asChild>
-              <span />
-            </AlertDialogAction>
-            <Button
-              onClick={() => setClearDialogOpen(true)}
-              disabled={clearing}
-              variant="destructive"
-            >
-              {clearing ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              ) : (
-                <Trash2 className="h-4 w-4 mr-2" />
-              )}
-              Limpar Vendas
-            </Button>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Limpar todos os registros de vendas</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Are you sure you want to delete all records? This action cannot be undone.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel disabled={clearing}>Cancelar</AlertDialogCancel>
-                <AlertDialogAction
-                  onClick={handleClearVendas}
-                  disabled={clearing}
-                  className="bg-red-500 hover:bg-red-600"
-                >
-                  {clearing ? (
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  ) : (
-                    <Trash2 className="h-4 w-4 mr-2" />
-                  )}
-                  Excluir Tudo
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
         </div>
+
         <div className="bg-white rounded-xl border border-zinc-200/60 overflow-hidden shadow-sm flex-1">
           <Table>
             <TableHeader>
