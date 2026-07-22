@@ -93,7 +93,7 @@ export default function Layout() {
                 </Link>
               </Button>
               <Button className="bg-blue-600 hover:bg-blue-700" asChild>
-                <Link className="text-[#ffff] rounded-[10.4px] bg-[#052136]" to="/register">
+                <Link className="text-[#ffff] rounded-[10.4px] bg-[#052135]" to="/register">
                   Começar Agora
                 </Link>
               </Button>
