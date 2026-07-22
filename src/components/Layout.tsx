@@ -72,7 +72,7 @@ export default function Layout() {
   if (!user) {
     return (
       <div className="flex min-h-screen flex-col bg-slate-50">
-        <header className="sticky top-0 z-50 w-full border-b bg-white/80 backdrop-blur-sm">
+        <header className="sticky top-0 z-50 w-full border-b bg-white/80 backdrop-blur-sm text-[#ffff] bg-[#052136]">
           <div className="container flex h-16 items-center justify-between text-[#ffff] bg-[#052136]">
             <Link to="/" className="flex items-center gap-2">
               <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-900 shadow-sm shadow-blue-500/20 overflow-hidden p-0.5">
@@ -82,7 +82,7 @@ export default function Layout() {
                   className="h-full w-full object-contain"
                 />
               </div>
-              <span className="text-xl font-bold tracking-tight text-slate-900">
+              <span className="text-xl font-bold tracking-tight text-[#ffff]">
                 CRM Perícia Foco
               </span>
             </Link>
