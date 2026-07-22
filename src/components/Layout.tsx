@@ -82,16 +82,20 @@ export default function Layout() {
                   className="h-full w-full object-contain"
                 />
               </div>
-              <span className="text-xl font-bold tracking-tight text-[#ffff] text-[#0c0c0c]">
+              <span className="text-xl font-bold tracking-tight text-[#ffff] text-[#060606]">
                 CRM Perícia Foco
               </span>
             </Link>
             <nav className="flex items-center gap-4">
               <Button variant="ghost" asChild>
-                <Link to="/login">Entrar</Link>
+                <Link className="text-[#ffff] bg-[#052136]" to="/login">
+                  Entrar
+                </Link>
               </Button>
               <Button className="bg-blue-600 hover:bg-blue-700" asChild>
-                <Link to="/register">Começar Agora</Link>
+                <Link className="text-[#ffff] bg-[#052136] rounded-[10.4px]" to="/register">
+                  Começar Agora
+                </Link>
               </Button>
             </nav>
           </div>
