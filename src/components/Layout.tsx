@@ -72,30 +72,29 @@ export default function Layout() {
   if (!user) {
     return (
       <div className="flex min-h-screen flex-col bg-slate-50">
-        <header className="sticky top-0 z-50 w-full border-b bg-white/80 backdrop-blur-sm text-[#ffff] bg-[#ffff]">
-          <div className="container flex h-16 items-center justify-between text-[#ffff] bg-[#ffff]">
+        <header className="sticky top-0 z-50 w-full border-b bg-white backdrop-blur-sm">
+          <div className="container flex h-16 items-center justify-between">
             <Link to="/" className="flex items-center gap-2">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-900 shadow-sm shadow-blue-500/20 overflow-hidden p-0.5">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#052136] shadow-sm overflow-hidden p-0.5">
                 <img
                   src={logoUrl}
                   alt="CRM Perícia Foco Logo"
                   className="h-full w-full object-contain"
                 />
               </div>
-              <span className="text-xl font-bold tracking-tight text-[#ffff] text-[#000000]">
+              <span className="text-xl font-bold tracking-tight text-[#052136]">
                 CRM Perícia Foco
               </span>
             </Link>
             <nav className="flex items-center gap-4">
-              <Button variant="ghost" asChild>
-                <Link className="text-[#ffff] bg-[#052136]" to="/login">
-                  Entrar
-                </Link>
+              <Button variant="ghost" className="text-[#052136] hover:bg-slate-100" asChild>
+                <Link to="/login">Entrar</Link>
               </Button>
-              <Button className="bg-blue-600 hover:bg-blue-700" asChild>
-                <Link className="text-[#ffff] rounded-[10.4px] bg-[#052136]" to="/register">
-                  Começar Agora
-                </Link>
+              <Button
+                className="bg-[#052136] text-white hover:bg-[#08304c] rounded-[10.4px]"
+                asChild
+              >
+                <Link to="/register">Começar Agora</Link>
               </Button>
             </nav>
           </div>
@@ -134,23 +133,23 @@ export default function Layout() {
   }
 
   return (
-    <SidebarProvider className="bg-[#ffff]">
-      <Sidebar variant="inset" className="border-r border-zinc-200/70 bg-[#ffff]">
-        <SidebarHeader className="px-4 pb-5 pt-6 text-[#ffff] bg-[#ffff]">
+    <SidebarProvider className="bg-white">
+      <Sidebar variant="inset" className="border-r border-zinc-200/70 bg-white">
+        <SidebarHeader className="px-4 pb-5 pt-6 bg-white">
           <div className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-900 shadow-sm shadow-blue-500/20 overflow-hidden p-0.5">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#052136] shadow-sm overflow-hidden p-0.5">
               <img
                 src={logoUrl}
                 alt="CRM Perícia Foco Logo"
                 className="h-full w-full object-contain"
               />
             </div>
-            <span className="text-[17px] font-semibold tracking-tight text-zinc-900">
+            <span className="text-[17px] font-semibold tracking-tight text-[#052136]">
               CRM Perícia Foco
             </span>
           </div>
         </SidebarHeader>
-        <SidebarContent className="px-3 pt-2 bg-[#ffff]">
+        <SidebarContent className="px-3 pt-2 bg-white">
           <div className="px-2 pb-2 pt-2 text-[11px] font-semibold uppercase tracking-wider text-zinc-400">
             CRM & Vendas
           </div>
@@ -165,12 +164,14 @@ export default function Layout() {
                     className={cn(
                       'h-9 rounded-lg px-2.5 text-[13.5px] font-medium transition-colors',
                       active
-                        ? 'bg-blue-50 text-blue-700 hover:bg-blue-50 hover:text-blue-700'
+                        ? 'bg-slate-100 text-[#052136] hover:bg-slate-200'
                         : 'text-zinc-600 hover:bg-zinc-100/70 hover:text-zinc-900',
                     )}
                   >
                     <Link to={to}>
-                      <Icon className={cn('h-4 w-4', active ? 'text-blue-600' : 'text-zinc-400')} />
+                      <Icon
+                        className={cn('h-4 w-4', active ? 'text-[#052136]' : 'text-zinc-400')}
+                      />
                       <span>{label}</span>
                     </Link>
                   </SidebarMenuButton>
@@ -190,7 +191,7 @@ export default function Layout() {
                 className={cn(
                   'h-9 rounded-lg px-2.5 text-[13.5px] font-medium transition-colors',
                   location.pathname === '/hotmart'
-                    ? 'bg-blue-50 text-blue-700 hover:bg-blue-50 hover:text-blue-700'
+                    ? 'bg-slate-100 text-[#052136] hover:bg-slate-200'
                     : 'text-zinc-600 hover:bg-zinc-100/70 hover:text-zinc-900',
                 )}
               >
@@ -198,7 +199,7 @@ export default function Layout() {
                   <ShoppingBag
                     className={cn(
                       'h-4 w-4',
-                      location.pathname === '/hotmart' ? 'text-blue-600' : 'text-zinc-400',
+                      location.pathname === '/hotmart' ? 'text-[#052136]' : 'text-zinc-400',
                     )}
                   />
                   <span>Logs de Webhook</span>
@@ -221,12 +222,14 @@ export default function Layout() {
                     className={cn(
                       'h-9 rounded-lg px-2.5 text-[13.5px] font-medium transition-colors',
                       active
-                        ? 'bg-blue-50 text-blue-700 hover:bg-blue-50 hover:text-blue-700'
+                        ? 'bg-slate-100 text-[#052136] hover:bg-slate-200'
                         : 'text-zinc-600 hover:bg-zinc-100/70 hover:text-zinc-900',
                     )}
                   >
                     <Link to={to}>
-                      <Icon className={cn('h-4 w-4', active ? 'text-blue-600' : 'text-zinc-400')} />
+                      <Icon
+                        className={cn('h-4 w-4', active ? 'text-[#052136]' : 'text-zinc-400')}
+                      />
                       <span>{label}</span>
                     </Link>
                   </SidebarMenuButton>
@@ -240,7 +243,7 @@ export default function Layout() {
                 className={cn(
                   'h-9 rounded-lg px-2.5 text-[13.5px] font-medium transition-colors',
                   location.pathname === '/connection-setup'
-                    ? 'bg-blue-50 text-blue-700 hover:bg-blue-50 hover:text-blue-700'
+                    ? 'bg-slate-100 text-[#052136] hover:bg-slate-200'
                     : 'text-zinc-600 hover:bg-zinc-100/70 hover:text-zinc-900',
                 )}
               >
@@ -248,7 +251,9 @@ export default function Layout() {
                   <Settings2
                     className={cn(
                       'h-4 w-4',
-                      location.pathname === '/connection-setup' ? 'text-blue-600' : 'text-zinc-400',
+                      location.pathname === '/connection-setup'
+                        ? 'text-[#052136]'
+                        : 'text-zinc-400',
                     )}
                   />
                   <span>Conexão</span>
@@ -268,11 +273,11 @@ export default function Layout() {
         </SidebarContent>
         <SidebarFooter className="border-t border-zinc-200/70 p-3">
           <div className="flex items-center gap-2.5 rounded-lg p-2">
-            <div className="h-8 w-8 shrink-0 rounded-full bg-gradient-to-br from-zinc-100 to-zinc-200 flex items-center justify-center text-[13px] font-semibold text-zinc-700 ring-1 ring-zinc-200">
+            <div className="h-8 w-8 shrink-0 rounded-full bg-[#052136] flex items-center justify-center text-[13px] font-semibold text-white">
               {(user.name?.charAt(0) || user.email?.charAt(0))?.toUpperCase()}
             </div>
             <div className="flex flex-col overflow-hidden flex-1 min-w-0">
-              <span className="text-[13px] font-medium text-zinc-900 truncate leading-tight">
+              <span className="text-[13px] font-medium text-[#052136] truncate leading-tight">
                 {user.name || 'User'}
               </span>
               <span className="text-[11.5px] text-zinc-500 truncate">{user.email}</span>
@@ -280,7 +285,7 @@ export default function Layout() {
           </div>
           <Button
             variant="ghost"
-            className="w-full justify-start h-9 text-[13.5px] text-zinc-600 hover:bg-zinc-100/70 hover:text-zinc-900 mt-1 px-2.5"
+            className="w-full justify-start h-9 text-[13.5px] text-zinc-600 hover:bg-zinc-100/70 hover:text-[#052136] mt-1 px-2.5"
             onClick={handleLogout}
           >
             <LogOut className="mr-2 h-4 w-4 text-zinc-400" />
@@ -291,7 +296,7 @@ export default function Layout() {
       <SidebarInset className="bg-zinc-50/60">
         <header className="flex h-14 shrink-0 items-center gap-2 border-b border-zinc-200/70 bg-white px-4 md:hidden">
           <SidebarTrigger />
-          <span className="font-semibold tracking-tight text-zinc-900">CRM Perícia Foco</span>
+          <span className="font-semibold tracking-tight text-[#052136]">CRM Perícia Foco</span>
         </header>
         <div className="flex flex-1 flex-col overflow-hidden">
           <Outlet />
