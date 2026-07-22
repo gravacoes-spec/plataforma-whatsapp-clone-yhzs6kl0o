@@ -201,33 +201,82 @@ export default function Leads() {
     <div className="flex-1 flex flex-col h-full bg-zinc-50/50">
       <PageHeader title="Leads" description="Gerencie seus contatos e clientes em potencial." />
       <div className="px-8 pb-8 flex-1 flex flex-col">
-        {/* BOTÕES COM A MELHORIA DE RESPONSIVIDADE */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-3">
-          <div className="relative w-full sm:w-80">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
-            <Input
-              placeholder="Buscar por nome, email ou telefone..."
-              className="pl-9 bg-white"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
+        {/* BARRA DE PESQUISA E FILTROS RÁPIDOS */}
+        <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between mb-6 gap-4">
+          {/* Grupo de Busca e Filtros */}
+          <div className="flex flex-col sm:flex-row w-full xl:w-auto items-start sm:items-center gap-3">
+            {/* Busca */}
+            <div className="relative w-full sm:w-72">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
+              <Input
+                placeholder="Buscar por nome, email..."
+                className="pl-9 bg-white shadow-sm border-zinc-200"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
+
+            {/* Filtro: Pipeline (Agora visível diretamente na barra) */}
+            <Select value={filterPipeline} onValueChange={setFilterPipeline}>
+              <SelectTrigger className="w-full sm:w-[220px] bg-white shadow-sm border-zinc-200">
+                <SelectValue placeholder="Etapa do Pipeline" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas as etapas</SelectItem>
+                {PIPELINE_STAGES.map((s) => (
+                  <SelectItem key={s} value={s}>
+                    {s}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {/* Filtro: Vendedor (Agora visível diretamente na barra) */}
+            <Select value={filterSeller} onValueChange={setFilterSeller}>
+              <SelectTrigger className="w-full sm:w-[220px] bg-white shadow-sm border-zinc-200">
+                <SelectValue placeholder="Vendedor Responsável" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os Vendedores</SelectItem>
+                {users.map((u) => (
+                  <SelectItem key={u.id} value={u.id}>
+                    {u.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {/* Botão de Limpar Filtros (Aparece apenas se houver filtros ativos) */}
+            {(filterPipeline !== 'all' || filterSeller !== 'all' || search !== '') && (
+              <Button
+                variant="ghost"
+                className="text-zinc-500 hover:text-zinc-900 px-2"
+                onClick={() => {
+                  setFilterPipeline('all')
+                  setFilterSeller('all')
+                  setSearch('')
+                }}
+              >
+                Limpar
+              </Button>
+            )}
           </div>
-          <div className="flex items-center gap-3 w-full sm:w-auto">
+
+          {/* Grupo de Ações Principais */}
+          <div className="flex items-center gap-3 w-full xl:w-auto mt-2 xl:mt-0">
+            {/* O botão de Filtros Laterais fica aqui caso você queira adicionar mais opções no futuro (como data, score, etc).
+                Dei uma cor de fundo sólida para ele não ficar transparente. */}
             <Button
-              variant="outline"
-              className="bg-white flex-1 sm:flex-initial justify-center"
+              variant="secondary"
+              className="bg-zinc-100 hover:bg-zinc-200 text-zinc-900 border border-zinc-200 shadow-sm flex-1 xl:flex-initial justify-center"
               onClick={() => setFilterOpen(true)}
             >
-              <SlidersHorizontal className="h-4 w-4 mr-2" /> Filtros
-              {(filterPipeline !== 'all' || filterSeller !== 'all') && (
-                <span className="ml-2 inline-flex items-center justify-center w-5 h-5 text-[10px] font-bold rounded-full bg-violet-600 text-white">
-                  {(filterPipeline !== 'all' ? 1 : 0) + (filterSeller !== 'all' ? 1 : 0)}
-                </span>
-              )}
+              <SlidersHorizontal className="h-4 w-4 mr-2" /> Mais Filtros
             </Button>
+
             <Button
               onClick={() => handleOpenModal()}
-              className="bg-violet-600 hover:bg-violet-700 text-white flex-1 sm:flex-initial"
+              className="bg-[#052136] hover:bg-[#08304c] text-white flex-1 xl:flex-initial shadow-sm"
             >
               <Plus className="h-4 w-4 mr-2" /> Novo Lead
             </Button>
