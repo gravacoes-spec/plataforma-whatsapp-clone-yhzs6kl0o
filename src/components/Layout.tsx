@@ -82,7 +82,7 @@ export default function Layout() {
                   className="h-full w-full object-contain"
                 />
               </div>
-              <span className="text-xl font-bold tracking-tight text-[#ffff] text-[#060606]">
+              <span className="text-xl font-bold tracking-tight text-[#ffff] text-[#000000]">
                 CRM Perícia Foco
               </span>
             </Link>
@@ -93,7 +93,7 @@ export default function Layout() {
                 </Link>
               </Button>
               <Button className="bg-blue-600 hover:bg-blue-700" asChild>
-                <Link className="text-[#ffff] rounded-[10.4px] bg-[#052135]" to="/register">
+                <Link className="text-[#ffff] rounded-[10.4px] bg-[#041d2f]" to="/register">
                   Começar Agora
                 </Link>
               </Button>
