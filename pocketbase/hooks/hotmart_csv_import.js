@@ -191,6 +191,7 @@ routerAdd(
           statusCheck === 'COMPLETE' ||
           statusCheck === 'APROVADA' ||
           statusCheck === 'COMPLETA' ||
+          statusCheck === 'COMPLETO' ||
           statusCheck === 'PAID' ||
           statusCheck === 'PAGO'
 

@@ -130,6 +130,7 @@ export default function Index() {
         status === 'COMPLETED' ||
         status === 'APROVADA' ||
         status === 'COMPLETA' ||
+        status === 'COMPLETO' ||
         status === 'PAID' ||
         status === 'PAGO' ||
         status === 'PAYMENT_CONFIRMED'
