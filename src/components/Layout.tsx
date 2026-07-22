@@ -82,7 +82,7 @@ export default function Layout() {
                   className="h-full w-full object-contain"
                 />
               </div>
-              <span className="text-xl font-bold tracking-tight text-[#ffff]">
+              <span className="text-xl font-bold tracking-tight text-[#ffff] text-[#0c0c0c]">
                 CRM Perícia Foco
               </span>
             </Link>
