@@ -93,7 +93,7 @@ export default function Layout() {
                 </Link>
               </Button>
               <Button className="bg-blue-600 hover:bg-blue-700" asChild>
-                <Link className="text-[#ffff] rounded-[10.4px] bg-[#041d2f]" to="/register">
+                <Link className="text-[#ffff] rounded-[10.4px] bg-[#052136]" to="/register">
                   Começar Agora
                 </Link>
               </Button>
@@ -134,8 +134,8 @@ export default function Layout() {
   }
 
   return (
-    <SidebarProvider className="bg-[#052136]">
-      <Sidebar variant="inset" className="border-r border-zinc-200/70 bg-[#052136]">
+    <SidebarProvider className="bg-[#ffff]">
+      <Sidebar variant="inset" className="border-r border-zinc-200/70 bg-[#ffff]">
         <SidebarHeader className="px-4 pb-5 pt-6 bg-[#052136]">
           <div className="flex items-center gap-2.5">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-900 shadow-sm shadow-blue-500/20 overflow-hidden p-0.5">
