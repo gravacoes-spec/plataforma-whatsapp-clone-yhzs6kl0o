@@ -130,9 +130,9 @@ export default function Layout() {
   }
 
   return (
-    <SidebarProvider>
-      <Sidebar variant="inset" className="border-r border-zinc-200/70 bg-white">
-        <SidebarHeader className="px-4 pb-5 pt-6">
+    <SidebarProvider className="bg-[#052136]">
+      <Sidebar variant="inset" className="border-r border-zinc-200/70 bg-[#052136]">
+        <SidebarHeader className="px-4 pb-5 pt-6 bg-[#052136]">
           <div className="flex items-center gap-2.5">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-900 shadow-sm shadow-blue-500/20 overflow-hidden p-0.5">
               <img
@@ -146,7 +146,7 @@ export default function Layout() {
             </span>
           </div>
         </SidebarHeader>
-        <SidebarContent className="px-3 pt-2">
+        <SidebarContent className="px-3 pt-2 bg-[#052136]">
           <div className="px-2 pb-2 pt-2 text-[11px] font-semibold uppercase tracking-wider text-zinc-400">
             CRM & Vendas
           </div>
