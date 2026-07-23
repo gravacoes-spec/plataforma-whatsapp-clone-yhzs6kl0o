@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { getTasks, updateTask, createTask, deleteTask } from '@/services/tasks'
 import { getLeads, LeadRecord } from '@/services/leads'
+import { getUsers } from '@/services/users'
 import { useRealtime } from '@/hooks/use-realtime'
 import { useAuth } from '@/hooks/use-auth'
 import {
@@ -55,23 +56,38 @@ import {
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 
+const TASK_TYPES = ['Reunião / Consultoria', 'Follow-up', 'Mentoria', 'Outra']
+
 export default function Tasks() {
   const { user } = useAuth()
   const [searchParams, setSearchParams] = useSearchParams()
   const [tasks, setTasks] = useState<any[]>([])
   const [leads, setLeads] = useState<LeadRecord[]>([])
+  const [users, setUsers] = useState<any[]>([]) //
   const [loading, setLoading] = useState(true)
   const [view, setView] = useState<'list' | 'calendar'>('list')
   const [filter, setFilter] = useState<'all' | 'late' | 'premium'>('all')
   const [currentMonth, setCurrentMonth] = useState(new Date())
   const [isCreateOpen, setIsCreateOpen] = useState(false)
-  const [newTask, setNewTask] = useState({ id: '', description: '', due_date: '', lead_id: '' })
+  const [newTask, setNewTask] = useState({
+    id: '',
+    description: '',
+    due_date: '',
+    lead_id: '',
+    tp_tarefa: '',
+    user_resp: '',
+  })
 
   const loadData = async () => {
     try {
-      const [taskData, leadData] = await Promise.all([getTasks(), getLeads()])
+      const [taskData, leadData, usersData] = await Promise.all([
+        getTasks(),
+        getLeads(),
+        getUsers(),
+      ])
       setTasks(taskData)
       setLeads(leadData)
+      setUsers(usersData)
     } catch (e) {
       console.error(e)
     } finally {
@@ -122,7 +138,8 @@ export default function Tasks() {
       const payload: any = {
         description: newTask.description,
         due_date: newTask.due_date ? new Date(newTask.due_date).toISOString() : '',
-        user_id: user?.id,
+        user_resp: newTask.user_resp || user?.id, // Define o responsável
+        tp_tarefa: newTask.tp_tarefa, // Define o tipo
       }
       if (newTask.lead_id) {
         payload.lead_id = newTask.lead_id
@@ -132,11 +149,20 @@ export default function Tasks() {
         toast.success('Tarefa atualizada')
       } else {
         payload.completed = false
+        // Se a sua base de dados ainda exige o user_id antigo por segurança, mantemos:
+        payload.user_id = user?.id
         await createTask(payload)
         toast.success('Tarefa criada')
       }
       setIsCreateOpen(false)
-      setNewTask({ id: '', description: '', due_date: '', lead_id: '' })
+      setNewTask({
+        id: '',
+        description: '',
+        due_date: '',
+        lead_id: '',
+        tp_tarefa: '',
+        user_resp: '',
+      })
       const newParams = new URLSearchParams(searchParams)
       newParams.delete('lead')
       setSearchParams(newParams)
@@ -152,6 +178,8 @@ export default function Tasks() {
       description: task.description || '',
       due_date: task.due_date ? task.due_date.substring(0, 10) : '',
       lead_id: task.lead_id || '',
+      tp_tarefa: task.tp_tarefa || '',
+      user_resp: task.user_resp || task.user_id || '',
     })
     setIsCreateOpen(true)
   }
@@ -414,10 +442,17 @@ export default function Tasks() {
           </Button>
           <Button
             onClick={() => {
-              setNewTask({ id: '', description: '', due_date: '', lead_id: '' })
+              setNewTask({
+                id: '',
+                description: '',
+                due_date: '',
+                lead_id: '',
+                tp_tarefa: '',
+                user_resp: user?.id || '',
+              })
               setIsCreateOpen(true)
             }}
-            className="bg-emerald-500 hover:bg-emerald-600 text-white"
+            className="bg-[#052136] hover:bg-[#08304c] text-white"
           >
             <Plus className="h-4 w-4 mr-2" /> Nova Tarefa
           </Button>
@@ -456,14 +491,55 @@ export default function Tasks() {
                 placeholder="Descrição da tarefa"
               />
             </div>
-            <div className="space-y-2">
-              <Label>Data de Vencimento</Label>
-              <Input
-                type="date"
-                value={newTask.due_date}
-                onChange={(e) => setNewTask({ ...newTask, due_date: e.target.value })}
-              />
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Data de Vencimento</Label>
+                <Input
+                  type="date"
+                  value={newTask.due_date}
+                  onChange={(e) => setNewTask({ ...newTask, due_date: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Tipo de Tarefa</Label>
+                <Select
+                  value={newTask.tp_tarefa}
+                  onValueChange={(v) => setNewTask({ ...newTask, tp_tarefa: v })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {TASK_TYPES.map((t) => (
+                      <SelectItem key={t} value={t}>
+                        {t}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
+
+            <div className="space-y-2">
+              <Label>Responsável</Label>
+              <Select
+                value={newTask.user_resp}
+                onValueChange={(v) => setNewTask({ ...newTask, user_resp: v })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione um responsável" />
+                </SelectTrigger>
+                <SelectContent>
+                  {users.map((u) => (
+                    <SelectItem key={u.id} value={u.id}>
+                      {u.name || u.email}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
             <div className="space-y-2">
               <Label>Lead Relacionado</Label>
               <Select
@@ -485,7 +561,7 @@ export default function Tasks() {
           </div>
           <DialogFooter>
             <Button
-              className="text-[#000000]"
+              className="text-zinc-700 border-zinc-300 hover:bg-zinc-100"
               variant="outline"
               onClick={() => setIsCreateOpen(false)}
             >
@@ -493,7 +569,7 @@ export default function Tasks() {
             </Button>
             <Button
               onClick={handleCreateTask}
-              className="bg-emerald-500 hover:bg-emerald-600 text-white"
+              className="bg-[#052136] hover:bg-[#08304c] text-white"
             >
               {newTask.id ? 'Salvar Alterações' : 'Criar Tarefa'}
             </Button>
