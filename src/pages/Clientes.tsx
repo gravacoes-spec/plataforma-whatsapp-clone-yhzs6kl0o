@@ -91,6 +91,7 @@ export default function Clientes() {
       const activeMentorEmails = mentorsData
         .filter((m) => m.ativo)
         .map((m) => m.email?.toLowerCase())
+
       setMentors(
         usersData.filter(
           (u) =>
@@ -195,7 +196,7 @@ export default function Clientes() {
   if (loading) {
     return (
       <div className="flex h-full items-center justify-center bg-zinc-50">
-        <Loader2 className="h-6 w-6 animate-spin text-violet-500" />
+        <Loader2 className="h-6 w-6 animate-spin text-[#052136]" />
       </div>
     )
   }
@@ -242,7 +243,7 @@ export default function Clientes() {
                   </TableCell>
                   <TableCell>
                     <div className="flex flex-col">
-                      <span className="text-violet-700 text-[13px] font-medium">
+                      <span className="text-[#052136] text-[13px] font-medium">
                         {c.Nome_Prod || '-'}
                       </span>
                       <span className="text-zinc-500 text-[12px]">
@@ -260,7 +261,7 @@ export default function Clientes() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8 text-zinc-500 hover:text-violet-600"
+                        className="h-8 w-8 text-zinc-500 hover:text-[#052136]"
                         onClick={() => handleOpenModal(c)}
                       >
                         <Pencil className="h-4 w-4" />
@@ -297,11 +298,31 @@ export default function Clientes() {
           {editingCliente && (
             <Tabs defaultValue="basico" className="w-full">
               <div className="px-6 pt-2">
-                <TabsList className="w-full grid grid-cols-4">
-                  <TabsTrigger value="basico">Informações</TabsTrigger>
-                  <TabsTrigger value="compras">Compras</TabsTrigger>
-                  <TabsTrigger value="form">Formulário</TabsTrigger>
-                  <TabsTrigger value="mentoria">Mentoria</TabsTrigger>
+                <TabsList className="w-full grid grid-cols-4 bg-zinc-100">
+                  <TabsTrigger
+                    value="basico"
+                    className="data-[state=active]:bg-white data-[state=active]:text-[#052136] data-[state=active]:font-bold data-[state=active]:shadow-sm text-zinc-500"
+                  >
+                    Informações
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="compras"
+                    className="data-[state=active]:bg-white data-[state=active]:text-[#052136] data-[state=active]:font-bold data-[state=active]:shadow-sm text-zinc-500"
+                  >
+                    Compras
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="form"
+                    className="data-[state=active]:bg-white data-[state=active]:text-[#052136] data-[state=active]:font-bold data-[state=active]:shadow-sm text-zinc-500"
+                  >
+                    Formulário
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="mentoria"
+                    className="data-[state=active]:bg-white data-[state=active]:text-[#052136] data-[state=active]:font-bold data-[state=active]:shadow-sm text-zinc-500"
+                  >
+                    Mentoria
+                  </TabsTrigger>
                 </TabsList>
               </div>
 
@@ -380,7 +401,7 @@ export default function Clientes() {
 
                 <TabsContent value="compras" className="space-y-4 mt-0">
                   <div className="flex items-center gap-2 text-zinc-900 mb-2">
-                    <ShoppingBag className="h-5 w-5 text-violet-600" />
+                    <ShoppingBag className="h-5 w-5 text-[#052136]" />
                     <h3 className="font-semibold">Histórico de Compras (Hotmart)</h3>
                   </div>
                   {leadVendas.length > 0 ? (
@@ -485,21 +506,21 @@ export default function Clientes() {
                 </TabsContent>
 
                 <TabsContent value="mentoria" className="space-y-6 mt-0">
-                  <div className="space-y-4 border border-violet-100 bg-violet-50/30 p-4 rounded-xl">
-                    <h3 className="font-semibold text-violet-800 text-sm">Período Ativo</h3>
+                  <div className="space-y-4 border border-zinc-200 bg-zinc-50/50 p-4 rounded-xl">
+                    <h3 className="font-semibold text-[#052136] text-sm">Período Ativo</h3>
                     <div className="space-y-2">
                       <Label>Mentor(a) Atribuído(a)</Label>
                       <Select
                         value={editingCliente.Mentor_a || ''}
                         onValueChange={(v) => setEditingCliente({ ...editingCliente, Mentor_a: v })}
                       >
-                        <SelectTrigger>
+                        <SelectTrigger className="bg-white">
                           <SelectValue placeholder="Selecione um mentor(a)" />
                         </SelectTrigger>
                         <SelectContent>
                           {mentors.map((m) => (
                             <SelectItem key={m.id} value={m.id}>
-                              {m.name}
+                              {m.name || m.email}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -510,6 +531,7 @@ export default function Clientes() {
                         <Label>Data de Início</Label>
                         <Input
                           type="date"
+                          className="bg-white"
                           value={
                             editingCliente.Data_inicio
                               ? editingCliente.Data_inicio.substring(0, 10)
@@ -529,6 +551,7 @@ export default function Clientes() {
                         <Label>Data de Término</Label>
                         <Input
                           type="date"
+                          className="bg-white"
                           value={
                             editingCliente.Data_term
                               ? editingCliente.Data_term.substring(0, 10)
@@ -548,6 +571,7 @@ export default function Clientes() {
                     <div className="space-y-2">
                       <Label>Renovação</Label>
                       <Input
+                        className="bg-white"
                         value={editingCliente.Renov || ''}
                         onChange={(e) =>
                           setEditingCliente({ ...editingCliente, Renov: e.target.value })
@@ -558,7 +582,7 @@ export default function Clientes() {
                     <Button
                       onClick={saveToHistory}
                       variant="outline"
-                      className="w-full text-violet-700 hover:text-violet-800 border-violet-200 hover:bg-violet-100"
+                      className="w-full text-[#052136] hover:text-[#052136] border-[#052136]/20 hover:bg-[#052136]/5"
                     >
                       Arquivar no Histórico
                     </Button>
@@ -606,11 +630,15 @@ export default function Clientes() {
               </div>
             </Tabs>
           )}
-          <DialogFooter className="p-6 pt-4 border-t bg-zinc-50/50">
-            <Button variant="outline" onClick={() => setIsModalOpen(false)}>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              className="text-zinc-700 border-zinc-300 hover:bg-zinc-100 hover:text-zinc-900"
+              onClick={() => setIsModalOpen(false)}
+            >
               Cancelar
             </Button>
-            <Button onClick={handleSave} className="bg-emerald-500 hover:bg-emerald-600 text-white">
+            <Button onClick={handleSave} className="bg-[#052136] hover:bg-[#08304c] text-white">
               Salvar Alterações
             </Button>
           </DialogFooter>

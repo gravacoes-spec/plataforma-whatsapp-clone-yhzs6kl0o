@@ -730,23 +730,6 @@ export default function Leads() {
                 </TabsContent>
 
                 <TabsContent value="conversao" className="space-y-6 mt-0">
-                  <div className="flex items-center justify-between border-b pb-4">
-                    <div className="space-y-0.5">
-                      <Label className="text-base font-semibold text-zinc-900">
-                        Mentoria Ativa
-                      </Label>
-                      <p className="text-[13px] text-zinc-500">
-                        Este lead está recebendo mentoria atualmente?
-                      </p>
-                    </div>
-                    <Switch
-                      checked={!!editingLead.mentoria}
-                      onCheckedChange={(checked) =>
-                        setEditingLead({ ...editingLead, mentoria: checked })
-                      }
-                    />
-                  </div>
-
                   <div className="space-y-4">
                     <div className="flex items-center gap-2 text-zinc-900">
                       <ShoppingBag className="h-5 w-5 text-violet-600" />

@@ -116,6 +116,7 @@ export default function Users() {
           name: formData.name,
           email: formData.email,
           perfil_acess: formData.perfil_acess,
+          emailVisibility: true, // <--- ADICIONADO: Força o email a ficar visível
         }
         if (formData.password) {
           payload.password = formData.password
@@ -124,7 +125,12 @@ export default function Users() {
         await updateUser(editingUser.id, payload)
         toast.success('Usuário atualizado com sucesso')
       } else {
-        await createUser(formData)
+        // ADICIONADO: Garante que os novos usuários já nasçam com o e-mail visível
+        const newUserData = {
+          ...formData,
+          emailVisibility: true,
+        }
+        await createUser(newUserData)
         toast.success('Usuário criado com sucesso')
       }
       setIsModalOpen(false)
@@ -152,7 +158,8 @@ export default function Users() {
   const handleToggleMentorStatus = async (mentor: any, isAtivo: boolean) => {
     try {
       await updateMentor(mentor.id, { ativo: isAtivo })
-      toast.success('Status do mentor atualizado')
+      // ALTERAR AQUI:
+      toast.success('Status do mentor atualizado', { className: 'text-[#052136] font-medium' })
     } catch (e) {
       toast.error('Erro ao atualizar status')
     }

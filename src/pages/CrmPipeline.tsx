@@ -434,14 +434,14 @@ export default function CrmPipeline() {
                 <Button
                   variant="outline"
                   onClick={() => navigate('/crm/leads?lead=' + selectedLead.id)}
-                  className="flex-1 text-xs"
+                  className="flex-1 text-xs text-zinc-700 border-zinc-300 hover:bg-zinc-100 hover:text-zinc-900" 
                 >
                   Editar Lead
                 </Button>
                 <Button
                   variant="outline"
                   onClick={() => navigate('/crm/tasks?lead=' + selectedLead.id)}
-                  className="flex-1 text-xs"
+                  className="flex-1 text-xs text-zinc-700 border-zinc-300 hover:bg-zinc-100 hover:text-zinc-900"
                 >
                   Adicionar Tarefas
                 </Button>
@@ -452,7 +452,6 @@ export default function CrmPipeline() {
                   Chat WhatsApp
                 </Button>
               </div>
-            </div>
           )}
         </SheetContent>
       </Sheet>
