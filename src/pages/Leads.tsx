@@ -70,6 +70,9 @@ export default function Leads() {
   const [filterOpen, setFilterOpen] = useState(false)
   const [filterPipeline, setFilterPipeline] = useState('all')
   const [filterSeller, setFilterSeller] = useState('all')
+  const [filterTags, setFilterTags] = useState('')
+  const [filterLossReason, setFilterLossReason] = useState('all')
+  const [filterConcurso, setFilterConcurso] = useState('')
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingLead, setEditingLead] = useState<Partial<LeadRecord> | null>(null)
   const [leadVendas, setLeadVendas] = useState<any[]>([])
@@ -113,10 +116,15 @@ export default function Leads() {
             (l.email || '').toLowerCase().includes(search.toLowerCase()) ||
             (l.phone || '').includes(search)) &&
           (filterPipeline === 'all' || l.etapa_pipeline === filterPipeline) &&
-          (filterSeller === 'all' || l.vend_resp === filterSeller),
+          (filterSeller === 'all' || l.vend_resp === filterSeller) &&
+          (filterTags === '' ||
+            (l.historico_notas || '').toLowerCase().includes(filterTags.toLowerCase())) &&
+          (filterLossReason === 'all' || l.motivo_perda === filterLossReason) &&
+          (filterConcurso === '' ||
+            (l.concurso_alvo || '').toLowerCase().includes(filterConcurso.toLowerCase())),
       ),
     )
-  }, [search, leads, filterPipeline, filterSeller])
+  }, [search, leads, filterPipeline, filterSeller, filterTags, filterLossReason, filterConcurso])
 
   useEffect(() => {
     if (editingLead?.id || editingLead?.email) {
@@ -247,7 +255,12 @@ export default function Leads() {
             </Select>
 
             {/* Botão de Limpar Filtros (Aparece apenas se houver filtros ativos) */}
-            {(filterPipeline !== 'all' || filterSeller !== 'all' || search !== '') && (
+            {(filterPipeline !== 'all' ||
+              filterSeller !== 'all' ||
+              search !== '' ||
+              filterTags !== '' ||
+              filterLossReason !== 'all' ||
+              filterConcurso !== '') && (
               <Button
                 variant="ghost"
                 className="text-zinc-500 hover:text-zinc-900 px-2"
@@ -255,6 +268,9 @@ export default function Leads() {
                   setFilterPipeline('all')
                   setFilterSeller('all')
                   setSearch('')
+                  setFilterTags('')
+                  setFilterLossReason('all')
+                  setFilterConcurso('')
                 }}
               >
                 Limpar
@@ -272,6 +288,13 @@ export default function Leads() {
               onClick={() => setFilterOpen(true)}
             >
               <SlidersHorizontal className="h-4 w-4 mr-2" /> Mais Filtros
+              {(filterTags !== '' || filterLossReason !== 'all' || filterConcurso !== '') && (
+                <span className="ml-2 inline-flex items-center justify-center w-5 h-5 text-[10px] font-bold rounded-full bg-[#052136] text-white">
+                  {(filterTags !== '' ? 1 : 0) +
+                    (filterLossReason !== 'all' ? 1 : 0) +
+                    (filterConcurso !== '' ? 1 : 0)}
+                </span>
+              )}
             </Button>
 
             <Button
@@ -355,50 +378,54 @@ export default function Leads() {
       <Sheet open={filterOpen} onOpenChange={setFilterOpen}>
         <SheetContent className="sm:max-w-[400px]">
           <SheetHeader>
-            <SheetTitle>Filtros</SheetTitle>
+            <SheetTitle>Filtros Avançados</SheetTitle>
           </SheetHeader>
           <div className="px-4 py-6 space-y-6">
             <div className="space-y-2">
-              <Label>Etapa do Pipeline</Label>
-              <Select value={filterPipeline} onValueChange={setFilterPipeline}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Todas as etapas" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todas as etapas</SelectItem>
-                  {PIPELINE_STAGES.map((s) => (
-                    <SelectItem key={s} value={s}>
-                      {s}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label>Tags / Histórico (Notas)</Label>
+              <Input
+                placeholder="Ex: #quente, #prioridade..."
+                value={filterTags}
+                onChange={(e) => setFilterTags(e.target.value)}
+              />
             </div>
+
             <div className="space-y-2">
-              <Label>Vendedor Responsável</Label>
-              <Select value={filterSeller} onValueChange={setFilterSeller}>
+              <Label>Motivo Perda</Label>
+              <Select value={filterLossReason} onValueChange={setFilterLossReason}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Todos os vendedores" />
+                  <SelectValue placeholder="Selecione o motivo..." />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Todos os vendedores</SelectItem>
-                  {users.map((u) => (
-                    <SelectItem key={u.id} value={u.id}>
-                      {u.name}
+                  <SelectItem value="all">Todos os motivos</SelectItem>
+                  {LOSS_REASONS.map((r) => (
+                    <SelectItem key={r} value={r}>
+                      {r}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
+
+            <div className="space-y-2">
+              <Label>Concurso Alvo</Label>
+              <Input
+                placeholder="Ex: Polícia Federal"
+                value={filterConcurso}
+                onChange={(e) => setFilterConcurso(e.target.value)}
+              />
+            </div>
+
             <Button
               variant="outline"
-              className="w-full"
+              className="w-full text-zinc-700 border-zinc-300 hover:bg-zinc-100 hover:text-zinc-900"
               onClick={() => {
-                setFilterPipeline('all')
-                setFilterSeller('all')
+                setFilterTags('')
+                setFilterLossReason('all')
+                setFilterConcurso('')
               }}
             >
-              Limpar Filtros
+              Limpar Filtros Avançados
             </Button>
           </div>
         </SheetContent>
@@ -413,11 +440,36 @@ export default function Leads() {
             <Tabs defaultValue="basico" className="w-full">
               <div className="px-6 pt-2">
                 <TabsList className="w-full grid grid-cols-5">
-                  <TabsTrigger value="basico">Básico</TabsTrigger>
-                  <TabsTrigger value="comercial">Comercial</TabsTrigger>
-                  <TabsTrigger value="academico">Acad. e Financeiro</TabsTrigger>
-                  <TabsTrigger value="estudos">Estudos</TabsTrigger>
-                  <TabsTrigger value="conversao">Conversão</TabsTrigger>
+                  <TabsTrigger
+                    value="basico"
+                    className="data-[state=active]:text-[#052136] data-[state=active]:font-bold"
+                  >
+                    Básico
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="comercial"
+                    className="data-[state=active]:text-[#052136] data-[state=active]:font-bold"
+                  >
+                    Comercial
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="academico"
+                    className="data-[state=active]:text-[#052136] data-[state=active]:font-bold"
+                  >
+                    Acad. e Financeiro
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="estudos"
+                    className="data-[state=active]:text-[#052136] data-[state=active]:font-bold"
+                  >
+                    Estudos
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="conversao"
+                    className="data-[state=active]:text-[#052136] data-[state=active]:font-bold"
+                  >
+                    Conversão
+                  </TabsTrigger>
                 </TabsList>
               </div>
               <div className="p-6 py-4 max-h-[60vh] overflow-y-auto">
@@ -755,10 +807,14 @@ export default function Leads() {
             </Tabs>
           )}
           <DialogFooter className="p-6 pt-4 border-t bg-zinc-50/50">
-            <Button variant="outline" onClick={() => setIsModalOpen(false)}>
+            <Button
+              variant="outline"
+              className="text-zinc-700 border-zinc-300 hover:bg-zinc-100 hover:text-zinc-900"
+              onClick={() => setIsModalOpen(false)}
+            >
               Cancelar
             </Button>
-            <Button onClick={handleSave} className="bg-emerald-500 hover:bg-emerald-600 text-white">
+            <Button onClick={handleSave} className="bg-[#052136] hover:bg-[#08304c] text-white">
               Salvar
             </Button>
           </DialogFooter>
