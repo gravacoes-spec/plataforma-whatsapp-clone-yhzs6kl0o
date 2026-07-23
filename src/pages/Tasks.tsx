@@ -56,7 +56,7 @@ import {
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 
-const TASK_TYPES = ['Reunião / Consultoria', 'Follow-up', 'Mentoria', 'Outra']
+const TASK_TYPES = ['Reunião/Consultoria', 'Follow-up', 'Mentoria', 'Outra']
 
 export default function Tasks() {
   const { user } = useAuth()
