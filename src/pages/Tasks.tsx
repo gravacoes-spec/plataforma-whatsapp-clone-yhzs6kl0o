@@ -67,6 +67,7 @@ export default function Tasks() {
   const [loading, setLoading] = useState(true)
   const [view, setView] = useState<'list' | 'calendar'>('list')
   const [filter, setFilter] = useState<'all' | 'late' | 'premium'>('all')
+  const [filterType, setFilterType] = useState('all')
   const [currentMonth, setCurrentMonth] = useState(new Date())
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [newTask, setNewTask] = useState({
@@ -193,7 +194,12 @@ export default function Tasks() {
   }
 
   const filteredTasks = tasks.filter((t) => {
-    if (t.user_id !== user?.id) return false
+    // Garante que só veja as tarefas onde ele é o responsável (ou o criador caso não tenha responsável)
+    const responsavelId = t.user_resp || t.user_id
+    if (responsavelId !== user?.id) return false
+
+    // Aplica o filtro de Tipo de Tarefa
+    if (filterType !== 'all' && t.tp_tarefa !== filterType) return false
 
     if (filter === 'late' && (t.completed || !t.due_date || !isPast(parseISO(t.due_date))))
       return false
@@ -250,7 +256,7 @@ export default function Tasks() {
               >
                 {t.description || 'Sem descrição'}
               </p>
-              <div className="flex items-center gap-3 mt-1">
+              <div className="flex flex-wrap items-center gap-2 mt-1">
                 {t.due_date && (
                   <span
                     className={cn(
@@ -262,14 +268,28 @@ export default function Tasks() {
                     {format(parseISO(t.due_date), "dd 'de' MMM, yyyy", { locale: ptBR })}
                   </span>
                 )}
-                {t.expand?.lead_id && (
-                  <span className="text-[11px] px-2 py-0.5 rounded-full bg-violet-50 text-violet-700 font-medium truncate max-w-[200px]">
-                    Lead: {t.expand.lead_id.name}
+
+                {/* NOVO: Tag do Tipo de Tarefa */}
+                {t.tp_tarefa && (
+                  <span className="text-[11px] px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200 font-medium">
+                    {t.tp_tarefa}
                   </span>
                 )}
-                {t.expand?.client_id && (
-                  <span className="text-[11px] px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 font-medium truncate max-w-[200px]">
-                    Cliente: {t.expand.client_id.Aluno_a}
+
+                {/* NOVO: Responsável pela Tarefa */}
+                {(() => {
+                  const respUser = users.find((u) => u.id === (t.user_resp || t.user_id))
+                  if (!respUser) return null
+                  return (
+                    <span className="text-[11px] px-2 py-0.5 rounded-md bg-amber-50 text-amber-700 border border-amber-200/60 font-medium truncate max-w-[150px]">
+                      👤 {respUser.name || respUser.email}
+                    </span>
+                  )
+                })()}
+
+                {t.expand?.lead_id && (
+                  <span className="text-[11px] px-2 py-0.5 rounded-md bg-violet-50 text-violet-700 border border-violet-200/60 font-medium truncate max-w-[200px]">
+                    Lead: {t.expand.lead_id.name}
                   </span>
                 )}
               </div>
@@ -315,7 +335,7 @@ export default function Tasks() {
     const days = eachDayOfInterval({ start: startDate, end: endDate })
 
     return (
-      <div className="bg-white rounded-xl border border-zinc-200/60 shadow-sm overflow-hidden flex flex-col h-[calc(100vh-220px)]">
+      <div className="bg-white rounded-xl border border-zinc-200/60 shadow-sm overflow-hidden flex flex-col h-full min-h-[550px]">
         <div className="flex items-center justify-between p-4 border-b border-zinc-100">
           <h3 className="text-lg font-bold text-zinc-900 capitalize">
             {format(currentMonth, 'MMMM yyyy', { locale: ptBR })}
@@ -324,6 +344,7 @@ export default function Tasks() {
             <Button
               variant="outline"
               size="icon"
+              className="text-zinc-700 border-zinc-300 hover:bg-zinc-100"
               onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
             >
               <ChevronLeft className="h-4 w-4" />
@@ -331,6 +352,7 @@ export default function Tasks() {
             <Button
               variant="outline"
               size="icon"
+              className="text-zinc-700 border-zinc-300 hover:bg-zinc-100"
               onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
             >
               <ChevronRight className="h-4 w-4" />
@@ -414,32 +436,51 @@ export default function Tasks() {
 
   return (
     <div className="flex-1 flex flex-col h-full bg-zinc-50/50">
-      <div className="px-8 pt-8 pb-4 flex items-center justify-between">
+      <div className="px-8 pt-8 pb-4 flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-zinc-900">Minhas Tarefas</h1>
           <p className="text-sm text-zinc-500 mt-1">Acompanhe suas pendências e compromissos.</p>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex flex-wrap items-center gap-3">
+          <Select value={filterType} onValueChange={setFilterType}>
+            <SelectTrigger className="w-[160px] bg-white border-zinc-200 text-zinc-700 shadow-sm">
+              <SelectValue placeholder="Tipo de Tarefa" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os Tipos</SelectItem>
+              {TASK_TYPES.map((t) => (
+                <SelectItem key={t} value={t}>
+                  {t}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
           <Button
             variant={filter === 'late' ? 'default' : 'outline'}
             onClick={() => setFilter(filter === 'late' ? 'all' : 'late')}
             className={cn(
-              filter === 'late' && 'bg-red-500 hover:bg-red-600 text-white',
-              filter !== 'late' && 'bg-white text-zinc-700',
+              filter === 'late' && 'bg-red-500 hover:bg-red-600 text-white border-red-500',
+              filter !== 'late' && 'bg-white text-zinc-700 border-zinc-200',
+              'shadow-sm',
             )}
           >
             <AlertTriangle className="h-4 w-4 mr-2" /> Atrasadas ({lateCount})
           </Button>
+
           <Button
             variant={filter === 'premium' ? 'default' : 'outline'}
             onClick={() => setFilter(filter === 'premium' ? 'all' : 'premium')}
             className={cn(
-              filter === 'premium' && 'bg-violet-500 hover:bg-violet-600 text-white',
-              filter !== 'premium' && 'bg-white text-zinc-700',
+              filter === 'premium' &&
+                'bg-violet-500 hover:bg-violet-600 text-white border-violet-500',
+              filter !== 'premium' && 'bg-white text-zinc-700 border-zinc-200',
+              'shadow-sm',
             )}
           >
-            <Star className="h-4 w-4 mr-2" /> Premium/Qualificado
+            <Star className="h-4 w-4 mr-2" /> Premium/Quali.
           </Button>
+
           <Button
             onClick={() => {
               setNewTask({
@@ -452,15 +493,16 @@ export default function Tasks() {
               })
               setIsCreateOpen(true)
             }}
-            className="bg-[#052136] hover:bg-[#08304c] text-white"
+            className="bg-[#052136] hover:bg-[#08304c] text-white shadow-sm"
           >
             <Plus className="h-4 w-4 mr-2" /> Nova Tarefa
           </Button>
+
           <ToggleGroup
             type="single"
             value={view}
             onValueChange={(v) => v && setView(v as 'list' | 'calendar')}
-            className="bg-white border border-zinc-200 rounded-lg p-1"
+            className="bg-white border border-zinc-200 rounded-lg p-1 shadow-sm"
           >
             <ToggleGroupItem value="list" className="h-8 px-3 text-xs data-[state=on]:bg-zinc-100">
               <List className="h-4 w-4 mr-2" /> Lista
