@@ -88,17 +88,20 @@ export default function Clientes() {
       setLeads(leadData)
       setUsers(usersData)
 
-      const activeMentorEmails = mentorsData
-        .filter((m) => m.ativo)
-        .map((m) => m.email?.toLowerCase())
+      // 1. Identifica os mentores ativos na tabela bd_mentor
+      const activeMentors = mentorsData.filter((m) => m.ativo)
 
+      // 2. Filtra os usuários que têm perfil 'Mentor(a)' e cruza com os ativos (por email OU nome)
       setMentors(
-        usersData.filter(
-          (u) =>
-            u.perfil_acess === 'Mentor(a)' &&
-            u.email &&
-            activeMentorEmails.includes(u.email.toLowerCase()),
-        ),
+        usersData.filter((u) => {
+          if (u.perfil_acess !== 'Mentor(a)') return false
+
+          return activeMentors.some(
+            (m) =>
+              (u.email && m.email && u.email.toLowerCase() === m.email.toLowerCase()) ||
+              (u.name && m.nome && u.name.toLowerCase() === m.nome.toLowerCase()),
+          )
+        }),
       )
 
       setSellers(usersData.filter((u) => u.perfil_acess === 'Vendedor'))
