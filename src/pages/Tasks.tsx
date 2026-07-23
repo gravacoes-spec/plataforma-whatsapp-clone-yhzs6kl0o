@@ -484,7 +484,11 @@ export default function Tasks() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsCreateOpen(false)}>
+            <Button
+              className="text-[#000000]"
+              variant="outline"
+              onClick={() => setIsCreateOpen(false)}
+            >
               Cancelar
             </Button>
             <Button
