@@ -180,9 +180,19 @@ export default function Users() {
       <div className="px-8 pb-8 flex-1 flex flex-col">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
           <div className="flex items-center justify-between mb-6">
-            <TabsList>
-              <TabsTrigger value="usuarios">Gestão de Usuários</TabsTrigger>
-              <TabsTrigger value="mentores">Gestão de Mentores</TabsTrigger>
+            <TabsList className="bg-zinc-100">
+              <TabsTrigger
+                value="usuarios"
+                className="data-[state=active]:bg-white data-[state=active]:text-[#052136] data-[state=active]:font-bold data-[state=active]:shadow-sm text-zinc-500"
+              >
+                Gestão de Usuários
+              </TabsTrigger>
+              <TabsTrigger
+                value="mentores"
+                className="data-[state=active]:bg-white data-[state=active]:text-[#052136] data-[state=active]:font-bold data-[state=active]:shadow-sm text-zinc-500"
+              >
+                Gestão de Mentores
+              </TabsTrigger>
             </TabsList>
 
             <div className="flex items-center gap-4">
@@ -198,7 +208,7 @@ export default function Users() {
               {activeTab === 'usuarios' && (
                 <Button
                   onClick={() => handleOpenModal()}
-                  className="bg-violet-600 hover:bg-violet-700"
+                  className="bg-[#052136] hover:bg-[#08304c] text-white shadow-sm"
                 >
                   <Plus className="h-4 w-4 mr-2" />
                   Novo Usuário
@@ -356,10 +366,14 @@ export default function Users() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsModalOpen(false)}>
+            <Button
+              variant="outline"
+              className="text-zinc-700 border-zinc-300 hover:bg-zinc-100 hover:text-zinc-900"
+              onClick={() => setIsModalOpen(false)}
+            >
               Cancelar
             </Button>
-            <Button onClick={handleSave} className="bg-violet-600 hover:bg-violet-700 text-white">
+            <Button onClick={handleSave} className="bg-[#052136] hover:bg-[#08304c] text-white">
               Salvar
             </Button>
           </DialogFooter>

@@ -132,6 +132,9 @@ export default function Layout() {
     crmNavItems.push({ to: '/admin/users', label: 'Usuários e Mentores', icon: Settings2 })
   }
 
+  // Verifica se o usuário NÃO é mentor para mostrar Hotmart e WhatsApp
+  const isNotMentor = user?.perfil_acess !== 'Mentor(a)'
+
   return (
     <SidebarProvider className="bg-white">
       <Sidebar variant="inset" className="border-r border-zinc-200/70 bg-white">
@@ -180,97 +183,108 @@ export default function Layout() {
             })}
           </SidebarMenu>
 
-          <div className="px-2 pb-2 pt-6 text-[11px] font-semibold uppercase tracking-wider text-zinc-400">
-            Hotmart
-          </div>
-          <SidebarMenu className="gap-0.5">
-            <SidebarMenuItem>
-              <SidebarMenuButton
-                asChild
-                isActive={location.pathname === '/hotmart'}
-                className={cn(
-                  'h-9 rounded-lg px-2.5 text-[13.5px] font-medium transition-colors',
-                  location.pathname === '/hotmart'
-                    ? 'bg-slate-100 text-[#052136] hover:bg-slate-200'
-                    : 'text-zinc-600 hover:bg-zinc-100/70 hover:text-zinc-900',
-                )}
-              >
-                <Link to="/hotmart">
-                  <ShoppingBag
-                    className={cn(
-                      'h-4 w-4',
-                      location.pathname === '/hotmart' ? 'text-[#052136]' : 'text-zinc-400',
-                    )}
-                  />
-                  <span>Logs de Webhook</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          </SidebarMenu>
-
-          <div className="px-2 pb-2 pt-6 text-[11px] font-semibold uppercase tracking-wider text-zinc-400">
-            WhatsApp
-          </div>
-          <SidebarMenu className="gap-0.5">
-            {whatsappNavItems.map(({ to, label, icon: Icon }) => {
-              const active = location.pathname === to
-              return (
-                <SidebarMenuItem key={to}>
+          {/* Oculta a seção Hotmart para Mentores */}
+          {isNotMentor && (
+            <>
+              <div className="px-2 pb-2 pt-6 text-[11px] font-semibold uppercase tracking-wider text-zinc-400">
+                Hotmart
+              </div>
+              <SidebarMenu className="gap-0.5">
+                <SidebarMenuItem>
                   <SidebarMenuButton
                     asChild
-                    isActive={active}
+                    isActive={location.pathname === '/hotmart'}
                     className={cn(
                       'h-9 rounded-lg px-2.5 text-[13.5px] font-medium transition-colors',
-                      active
+                      location.pathname === '/hotmart'
                         ? 'bg-slate-100 text-[#052136] hover:bg-slate-200'
                         : 'text-zinc-600 hover:bg-zinc-100/70 hover:text-zinc-900',
                     )}
                   >
-                    <Link to={to}>
-                      <Icon
-                        className={cn('h-4 w-4', active ? 'text-[#052136]' : 'text-zinc-400')}
+                    <Link to="/hotmart">
+                      <ShoppingBag
+                        className={cn(
+                          'h-4 w-4',
+                          location.pathname === '/hotmart' ? 'text-[#052136]' : 'text-zinc-400',
+                        )}
                       />
-                      <span>{label}</span>
+                      <span>Logs de Webhook</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
-              )
-            })}
-            <SidebarMenuItem>
-              <SidebarMenuButton
-                asChild
-                isActive={location.pathname === '/connection-setup'}
-                className={cn(
-                  'h-9 rounded-lg px-2.5 text-[13.5px] font-medium transition-colors',
-                  location.pathname === '/connection-setup'
-                    ? 'bg-slate-100 text-[#052136] hover:bg-slate-200'
-                    : 'text-zinc-600 hover:bg-zinc-100/70 hover:text-zinc-900',
-                )}
-              >
-                <Link to="/connection-setup">
-                  <Settings2
+              </SidebarMenu>
+            </>
+          )}
+
+          {/* Oculta a seção WhatsApp para Mentores */}
+          {isNotMentor && (
+            <>
+              <div className="px-2 pb-2 pt-6 text-[11px] font-semibold uppercase tracking-wider text-zinc-400">
+                WhatsApp
+              </div>
+              <SidebarMenu className="gap-0.5">
+                {whatsappNavItems.map(({ to, label, icon: Icon }) => {
+                  const active = location.pathname === to
+                  return (
+                    <SidebarMenuItem key={to}>
+                      <SidebarMenuButton
+                        asChild
+                        isActive={active}
+                        className={cn(
+                          'h-9 rounded-lg px-2.5 text-[13.5px] font-medium transition-colors',
+                          active
+                            ? 'bg-slate-100 text-[#052136] hover:bg-slate-200'
+                            : 'text-zinc-600 hover:bg-zinc-100/70 hover:text-zinc-900',
+                        )}
+                      >
+                        <Link to={to}>
+                          <Icon
+                            className={cn('h-4 w-4', active ? 'text-[#052136]' : 'text-zinc-400')}
+                          />
+                          <span>{label}</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  )
+                })}
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={location.pathname === '/connection-setup'}
                     className={cn(
-                      'h-4 w-4',
+                      'h-9 rounded-lg px-2.5 text-[13.5px] font-medium transition-colors',
                       location.pathname === '/connection-setup'
-                        ? 'text-[#052136]'
-                        : 'text-zinc-400',
+                        ? 'bg-slate-100 text-[#052136] hover:bg-slate-200'
+                        : 'text-zinc-600 hover:bg-zinc-100/70 hover:text-zinc-900',
                     )}
-                  />
-                  <span>Conexão</span>
-                  {isConnected && (
-                    <span className="ml-auto flex h-1.5 w-1.5 rounded-full bg-emerald-500 ring-2 ring-emerald-500/20" />
-                  )}
-                  {isConnecting && (
-                    <span className="ml-auto flex h-1.5 w-1.5 rounded-full bg-amber-500 ring-2 ring-amber-500/20 animate-pulse" />
-                  )}
-                  {instance?.status === 'disconnected' && (
-                    <span className="ml-auto flex h-1.5 w-1.5 rounded-full bg-zinc-300" />
-                  )}
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          </SidebarMenu>
+                  >
+                    <Link to="/connection-setup">
+                      <Settings2
+                        className={cn(
+                          'h-4 w-4',
+                          location.pathname === '/connection-setup'
+                            ? 'text-[#052136]'
+                            : 'text-zinc-400',
+                        )}
+                      />
+                      <span>Conexão</span>
+                      {isConnected && (
+                        <span className="ml-auto flex h-1.5 w-1.5 rounded-full bg-emerald-500 ring-2 ring-emerald-500/20" />
+                      )}
+                      {isConnecting && (
+                        <span className="ml-auto flex h-1.5 w-1.5 rounded-full bg-amber-500 ring-2 ring-amber-500/20 animate-pulse" />
+                      )}
+                      {instance?.status === 'disconnected' && (
+                        <span className="ml-auto flex h-1.5 w-1.5 rounded-full bg-zinc-300" />
+                      )}
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </>
+          )}
         </SidebarContent>
+
         <SidebarFooter className="border-t border-zinc-200/70 p-3">
           <div className="flex items-center gap-2.5 rounded-lg p-2">
             <div className="h-8 w-8 shrink-0 rounded-full bg-[#052136] flex items-center justify-center text-[13px] font-semibold text-white">
