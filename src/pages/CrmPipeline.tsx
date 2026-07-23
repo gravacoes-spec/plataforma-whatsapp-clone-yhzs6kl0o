@@ -93,7 +93,7 @@ export default function CrmPipeline() {
   if (loading) {
     return (
       <div className="flex h-full items-center justify-center bg-zinc-50/50">
-        <Loader2 className="h-6 w-6 animate-spin text-zinc-300" />
+        <Loader2 className="h-6 w-6 animate-spin text-[#052136]" />
       </div>
     )
   }
@@ -180,7 +180,7 @@ export default function CrmPipeline() {
                         draggable
                         onDragStart={(e) => handleDragStart(e, lead.id)}
                         onClick={() => setSelectedLead(lead)}
-                        className="group flex flex-col p-3.5 bg-white rounded-lg shadow-sm border border-zinc-200 hover:border-violet-300 hover:shadow-md transition-all cursor-grab active:cursor-grabbing"
+                        className="group flex flex-col p-3.5 bg-white rounded-lg shadow-sm border border-zinc-200 hover:border-[#052136] hover:shadow-md transition-all cursor-grab active:cursor-grabbing"
                       >
                         <div className="flex justify-between items-start mb-2 gap-2">
                           <div className="flex items-center gap-1.5 min-w-0">
@@ -228,10 +228,12 @@ export default function CrmPipeline() {
             <div className="flex flex-col h-full">
               <SheetHeader className="p-6 border-b border-zinc-100 pb-5">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 font-bold text-lg">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#052136] text-white font-bold text-lg">
                     {selectedLead.name?.charAt(0)?.toUpperCase() || 'L'}
                   </div>
-                  <SheetTitle className="text-xl leading-tight">{selectedLead.name}</SheetTitle>
+                  <SheetTitle className="text-xl leading-tight text-[#052136]">
+                    {selectedLead.name}
+                  </SheetTitle>
                 </div>
                 <div className="flex flex-col gap-1.5 mt-4 text-sm text-zinc-600">
                   <div className="flex items-center gap-2">
@@ -344,21 +346,6 @@ export default function CrmPipeline() {
                     Conversão
                   </h4>
                   <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[13px] text-zinc-500">Mentoria Ativa:</span>
-                      <Switch
-                        checked={!!selectedLead.mentoria}
-                        onCheckedChange={async (checked) => {
-                          try {
-                            await updateLead(selectedLead.id, { mentoria: checked })
-                            setSelectedLead({ ...selectedLead, mentoria: checked })
-                            toast.success('Lead atualizado')
-                          } catch {
-                            toast.error('Erro ao atualizar')
-                          }
-                        }}
-                      />
-                    </div>
                     <div className="space-y-2">
                       <span className="text-[13px] text-zinc-500">Histórico de Compras:</span>
                       {leadVendas.length > 0 ? (
@@ -434,7 +421,7 @@ export default function CrmPipeline() {
                 <Button
                   variant="outline"
                   onClick={() => navigate('/crm/leads?lead=' + selectedLead.id)}
-                  className="flex-1 text-xs text-zinc-700 border-zinc-300 hover:bg-zinc-100 hover:text-zinc-900" 
+                  className="flex-1 text-xs text-zinc-700 border-zinc-300 hover:bg-zinc-100 hover:text-zinc-900"
                 >
                   Editar Lead
                 </Button>
@@ -447,11 +434,12 @@ export default function CrmPipeline() {
                 </Button>
                 <Button
                   onClick={() => navigate('/inbox?phone=' + selectedLead.phone)}
-                  className="flex-1 text-xs bg-emerald-500 hover:bg-emerald-600 text-white"
+                  className="flex-1 text-xs bg-[#052136] hover:bg-[#08304c] text-white"
                 >
                   Chat WhatsApp
                 </Button>
               </div>
+            </div>
           )}
         </SheetContent>
       </Sheet>
@@ -477,7 +465,11 @@ export default function CrmPipeline() {
             </Select>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setLossModalOpen(false)}>
+            <Button
+              variant="outline"
+              className="text-zinc-700 border-zinc-300 hover:bg-zinc-100"
+              onClick={() => setLossModalOpen(false)}
+            >
               Cancelar
             </Button>
             <Button
