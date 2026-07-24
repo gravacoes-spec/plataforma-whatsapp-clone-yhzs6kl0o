@@ -58,6 +58,16 @@ import {
 import { toast } from 'sonner'
 import { format, parseISO } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 export default function Clientes() {
   const { user } = useAuth()
@@ -75,6 +85,8 @@ export default function Clientes() {
   const [editingCliente, setEditingCliente] = useState<Partial<BdClienteRecord> | null>(null)
   const [leadVendas, setLeadVendas] = useState<any[]>([])
   const [mentoriaHistory, setMentoriaHistory] = useState<MentoriaPeriodoRecord[]>([])
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [clienteToDelete, setClienteToDelete] = useState<string | null>(null)
 
   const loadData = async () => {
     try {
@@ -185,14 +197,21 @@ export default function Clientes() {
     }
   }
 
-  const handleDelete = async (id: string) => {
-    if (confirm('Tem certeza que deseja excluir este cliente?')) {
-      try {
-        await deleteBdCliente(id)
-        toast.success('Cliente excluído com sucesso')
-      } catch (e) {
-        toast.error('Erro ao excluir cliente')
-      }
+  cconst promptDelete = (id: string) => {
+    setClienteToDelete(id)
+    setDeleteDialogOpen(true)
+  }
+
+  const confirmDelete = async () => {
+    if (!clienteToDelete) return
+    try {
+      await deleteBdCliente(clienteToDelete)
+      toast.success('Cliente excluído com sucesso')
+    } catch (e) {
+      toast.error('Erro ao excluir cliente')
+    } finally {
+      setDeleteDialogOpen(false)
+      setClienteToDelete(null)
     }
   }
 
@@ -273,7 +292,7 @@ export default function Clientes() {
                         variant="ghost"
                         size="icon"
                         className="h-8 w-8 text-zinc-500 hover:text-red-600 hover:bg-red-50"
-                        onClick={() => handleDelete(c.id)}
+                        onClick={() => promptDelete(c.id)} {/* ATUALIZE AQUI */}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -647,6 +666,32 @@ export default function Clientes() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Você tem certeza absoluta?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação não pode ser desfeita. Isso excluirá permanentemente o registro e removerá os dados de nossos servidores.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel 
+              onClick={() => {
+                setDeleteDialogOpen(false)
+              }}
+              className="text-zinc-700 border-zinc-300 hover:bg-zinc-100"
+            >
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmDelete} 
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              Sim, excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

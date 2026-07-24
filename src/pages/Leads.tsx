@@ -37,6 +37,16 @@ import { format, parseISO } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { Switch } from '@/components/ui/switch'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 const PIPELINE_STAGES = [
   '1. Novo Lead',
@@ -76,6 +86,8 @@ export default function Leads() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingLead, setEditingLead] = useState<Partial<LeadRecord> | null>(null)
   const [leadVendas, setLeadVendas] = useState<any[]>([])
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [leadToDelete, setLeadToDelete] = useState<string | null>(null)
 
   const loadData = async () => {
     try {
@@ -186,14 +198,21 @@ export default function Leads() {
     }
   }
 
-  const handleDelete = async (id: string) => {
-    if (confirm('Excluir este lead?')) {
-      try {
-        await deleteLead(id)
-        toast.success('Lead excluído')
-      } catch (e) {
-        toast.error('Erro ao excluir')
-      }
+  const promptDelete = (id: string) => {
+    setLeadToDelete(id)
+    setDeleteDialogOpen(true)
+  }
+
+  const confirmDelete = async () => {
+    if (!leadToDelete) return
+    try {
+      await deleteLead(leadToDelete)
+      toast.success('Lead excluído')
+    } catch (e) {
+      toast.error('Erro ao excluir')
+    } finally {
+      setDeleteDialogOpen(false)
+      setLeadToDelete(null)
     }
   }
 
@@ -355,7 +374,7 @@ export default function Leads() {
                         variant="ghost"
                         size="icon"
                         className="h-8 w-8 text-zinc-500 hover:text-red-600 hover:bg-red-50"
-                        onClick={() => handleDelete(l.id)}
+                        onClick={() => promptDelete(l.id)} {/* ATUALIZE AQUI */}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -803,6 +822,32 @@ export default function Leads() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Você tem certeza absoluta?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação não pode ser desfeita. Isso excluirá permanentemente o registro e removerá os dados de nossos servidores.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel 
+              onClick={() => {
+                setDeleteDialogOpen(false)
+              }}
+              className="text-zinc-700 border-zinc-300 hover:bg-zinc-100"
+            >
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmDelete} 
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              Sim, excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
