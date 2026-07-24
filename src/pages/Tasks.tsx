@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { getTasks, updateTask, createTask, deleteTask } from '@/services/tasks'
 import { getLeads, LeadRecord } from '@/services/leads'
+import { getBdClientes, BdClienteRecord } from '@/services/bd-clientes'
 import { getUsers } from '@/services/users'
 import { useRealtime } from '@/hooks/use-realtime'
 import { useAuth } from '@/hooks/use-auth'
@@ -56,14 +57,24 @@ import {
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 
-const TASK_TYPES = ['Reunião/Consultoria', 'Follow-up', 'Mentoria', 'Outra']
+const TASK_TYPES = [
+  'Ligação',
+  'WhatsApp',
+  'E-mail',
+  'Reunião / Consultoria',
+  'Follow-up',
+  'Administrativo',
+  'Outro',
+]
 
 export default function Tasks() {
   const { user } = useAuth()
   const [searchParams, setSearchParams] = useSearchParams()
   const [tasks, setTasks] = useState<any[]>([])
   const [leads, setLeads] = useState<LeadRecord[]>([])
-  const [users, setUsers] = useState<any[]>([]) //
+  const [clientes, setClientes] = useState<BdClienteRecord[]>([])
+  const [users, setUsers] = useState<any[]>([])
+
   const [loading, setLoading] = useState(true)
   const [view, setView] = useState<'list' | 'calendar'>('list')
   const [filter, setFilter] = useState<'all' | 'late' | 'premium'>('all')
@@ -75,19 +86,22 @@ export default function Tasks() {
     description: '',
     due_date: '',
     lead_id: '',
+    client_id: '',
     tp_tarefa: '',
     user_resp: '',
   })
 
   const loadData = async () => {
     try {
-      const [taskData, leadData, usersData] = await Promise.all([
+      const [taskData, leadData, clientData, usersData] = await Promise.all([
         getTasks(),
         getLeads(),
+        getBdClientes(),
         getUsers(),
       ])
       setTasks(taskData)
       setLeads(leadData)
+      setClientes(clientData)
       setUsers(usersData)
     } catch (e) {
       console.error(e)
@@ -99,14 +113,21 @@ export default function Tasks() {
   useEffect(() => {
     loadData()
     const leadParam = searchParams.get('lead')
-    if (leadParam) {
-      setNewTask((prev) => ({ ...prev, lead_id: leadParam }))
+    const clientParam = searchParams.get('client')
+    if (leadParam || clientParam) {
+      setNewTask((prev) => ({
+        ...prev,
+        lead_id: leadParam || '',
+        client_id: clientParam || '',
+        user_resp: user?.id || '',
+      }))
       setIsCreateOpen(true)
     }
   }, [])
 
   useRealtime('tasks', () => loadData())
   useRealtime('Leads', () => loadData())
+  useRealtime('bd_clientes', () => loadData())
 
   const toggleTask = async (task: any) => {
     try {
@@ -139,18 +160,17 @@ export default function Tasks() {
       const payload: any = {
         description: newTask.description,
         due_date: newTask.due_date ? new Date(newTask.due_date).toISOString() : '',
-        user_resp: newTask.user_resp || user?.id, // Define o responsável
-        tp_tarefa: newTask.tp_tarefa, // Define o tipo
+        user_resp: newTask.user_resp || user?.id,
+        tp_tarefa: newTask.tp_tarefa,
       }
-      if (newTask.lead_id) {
-        payload.lead_id = newTask.lead_id
-      }
+      if (newTask.lead_id) payload.lead_id = newTask.lead_id
+      if (newTask.client_id) payload.client_id = newTask.client_id
+
       if (newTask.id) {
         await updateTask(newTask.id, payload)
         toast.success('Tarefa atualizada')
       } else {
         payload.completed = false
-        // Se a sua base de dados ainda exige o user_id antigo por segurança, mantemos:
         payload.user_id = user?.id
         await createTask(payload)
         toast.success('Tarefa criada')
@@ -161,11 +181,13 @@ export default function Tasks() {
         description: '',
         due_date: '',
         lead_id: '',
+        client_id: '',
         tp_tarefa: '',
         user_resp: '',
       })
       const newParams = new URLSearchParams(searchParams)
       newParams.delete('lead')
+      newParams.delete('client')
       setSearchParams(newParams)
       loadData()
     } catch {
@@ -179,6 +201,7 @@ export default function Tasks() {
       description: task.description || '',
       due_date: task.due_date ? task.due_date.substring(0, 10) : '',
       lead_id: task.lead_id || '',
+      client_id: task.client_id || '',
       tp_tarefa: task.tp_tarefa || '',
       user_resp: task.user_resp || task.user_id || '',
     })
@@ -194,7 +217,7 @@ export default function Tasks() {
   }
 
   const filteredTasks = tasks.filter((t) => {
-    // Garante que só veja as tarefas onde ele é o responsável (ou o criador caso não tenha responsável)
+    // Garante que só veja as tarefas onde ele é o responsável (ou o criador)
     const responsavelId = t.user_resp || t.user_id
     if (responsavelId !== user?.id) return false
 
@@ -269,14 +292,12 @@ export default function Tasks() {
                   </span>
                 )}
 
-                {/* NOVO: Tag do Tipo de Tarefa */}
                 {t.tp_tarefa && (
                   <span className="text-[11px] px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200 font-medium">
                     {t.tp_tarefa}
                   </span>
                 )}
 
-                {/* NOVO: Responsável pela Tarefa */}
                 {(() => {
                   const respUser = users.find((u) => u.id === (t.user_resp || t.user_id))
                   if (!respUser) return null
@@ -290,6 +311,11 @@ export default function Tasks() {
                 {t.expand?.lead_id && (
                   <span className="text-[11px] px-2 py-0.5 rounded-md bg-violet-50 text-violet-700 border border-violet-200/60 font-medium truncate max-w-[200px]">
                     Lead: {t.expand.lead_id.name}
+                  </span>
+                )}
+                {t.expand?.client_id && (
+                  <span className="text-[11px] px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 border border-blue-200/60 font-medium truncate max-w-[200px]">
+                    Cliente: {t.expand.client_id.Aluno_a}
                   </span>
                 )}
               </div>
@@ -385,7 +411,7 @@ export default function Tasks() {
                 <div
                   className={cn(
                     'text-xs font-medium w-6 h-6 flex items-center justify-center rounded-full self-end',
-                    isToday(day) ? 'bg-violet-600 text-white' : 'text-zinc-600',
+                    isToday(day) ? 'bg-[#052136] text-white' : 'text-zinc-600',
                   )}
                 >
                   {format(day, 'd')}
@@ -410,7 +436,7 @@ export default function Tasks() {
                           e.stopPropagation()
                           handleEditTask(t)
                         }}
-                        className="p-0.5 text-zinc-500 hover:text-violet-600 rounded-sm"
+                        className="p-0.5 text-zinc-500 hover:text-[#052136] rounded-sm"
                       >
                         <Pencil className="h-3 w-3" />
                       </button>
@@ -468,18 +494,21 @@ export default function Tasks() {
             <AlertTriangle className="h-4 w-4 mr-2" /> Atrasadas ({lateCount})
           </Button>
 
-          <Button
-            variant={filter === 'premium' ? 'default' : 'outline'}
-            onClick={() => setFilter(filter === 'premium' ? 'all' : 'premium')}
-            className={cn(
-              filter === 'premium' &&
-                'bg-violet-500 hover:bg-violet-600 text-white border-violet-500',
-              filter !== 'premium' && 'bg-white text-zinc-700 border-zinc-200',
-              'shadow-sm',
-            )}
-          >
-            <Star className="h-4 w-4 mr-2" /> Premium/Quali.
-          </Button>
+          {/* Oculta botão Premium para Mentores */}
+          {user?.perfil_acess !== 'Mentor(a)' && (
+            <Button
+              variant={filter === 'premium' ? 'default' : 'outline'}
+              onClick={() => setFilter(filter === 'premium' ? 'all' : 'premium')}
+              className={cn(
+                filter === 'premium' &&
+                  'bg-violet-500 hover:bg-violet-600 text-white border-violet-500',
+                filter !== 'premium' && 'bg-white text-zinc-700 border-zinc-200',
+                'shadow-sm',
+              )}
+            >
+              <Star className="h-4 w-4 mr-2" /> Premium/Quali.
+            </Button>
+          )}
 
           <Button
             onClick={() => {
@@ -488,6 +517,7 @@ export default function Tasks() {
                 description: '',
                 due_date: '',
                 lead_id: '',
+                client_id: '',
                 tp_tarefa: '',
                 user_resp: user?.id || '',
               })
@@ -582,24 +612,47 @@ export default function Tasks() {
               </Select>
             </div>
 
-            <div className="space-y-2">
-              <Label>Lead Relacionado</Label>
-              <Select
-                value={newTask.lead_id}
-                onValueChange={(v) => setNewTask({ ...newTask, lead_id: v })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione um lead (opcional)" />
-                </SelectTrigger>
-                <SelectContent>
-                  {leads.map((l) => (
-                    <SelectItem key={l.id} value={l.id}>
-                      {l.name || 'Sem nome'}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            {user?.perfil_acess !== 'Mentor(a)' && (
+              <div className="space-y-2">
+                <Label>Lead Relacionado</Label>
+                <Select
+                  value={newTask.lead_id}
+                  onValueChange={(v) => setNewTask({ ...newTask, lead_id: v, client_id: '' })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione um lead (opcional)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {leads.map((l) => (
+                      <SelectItem key={l.id} value={l.id}>
+                        {l.name || 'Sem nome'}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {user?.perfil_acess !== 'Vendedor' && (
+              <div className="space-y-2">
+                <Label>Cliente Relacionado</Label>
+                <Select
+                  value={newTask.client_id}
+                  onValueChange={(v) => setNewTask({ ...newTask, client_id: v, lead_id: '' })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione um cliente (opcional)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {clientes.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.Aluno_a || 'Sem nome'}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button
