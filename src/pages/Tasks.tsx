@@ -217,11 +217,13 @@ export default function Tasks() {
   }
 
   const filteredTasks = tasks.filter((t) => {
-    // Garante que só veja as tarefas onde ele é o responsável (ou o criador)
-    const responsavelId = t.user_resp || t.user_id
-    if (responsavelId !== user?.id) return false
+    // Mentores veem apenas as próprias tarefas. Vendedor, Gestor e Suporte veem TODAS.
+    if (user?.perfil_acess === 'Mentor(a)') {
+      const responsavelId = t.user_resp || t.user_id
+      if (responsavelId !== user?.id) return false
+    }
 
-    // Aplica o filtro de Tipo de Tarefa
+    // Aplica o filtro de Tipo de Tarefa...
     if (filterType !== 'all' && t.tp_tarefa !== filterType) return false
 
     if (filter === 'late' && (t.completed || !t.due_date || !isPast(parseISO(t.due_date))))
