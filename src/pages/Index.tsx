@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo } from 'react'
 import { getLeads, LeadRecord } from '@/services/leads'
 import { getMetas, MetaRecord } from '@/services/metas'
+import { getTasks } from '@/services/tasks'
 import { getUsers } from '@/services/users'
 import pb from '@/lib/pocketbase/client'
 import { useRealtime } from '@/hooks/use-realtime'
@@ -47,6 +48,7 @@ import { Input } from '@/components/ui/input'
 export default function Index() {
   const [leads, setLeads] = useState<LeadRecord[]>([])
   const [metas, setMetas] = useState<MetaRecord[]>([])
+  const [tasks, setTasks] = useState<any[]>([])
   const [vendas, setVendas] = useState<any[]>([])
   const [sellers, setSellers] = useState<any[]>([])
 
@@ -59,14 +61,16 @@ export default function Index() {
 
   const loadData = async () => {
     try {
-      const [l, m, s, v] = await Promise.all([
+      const [l, m, t, s, v] = await Promise.all([
         getLeads(),
         getMetas(),
+        getTasks(),
         getUsers(),
         pb.collection('vendas_hotmart').getFullList(),
       ])
       setLeads(l)
       setMetas(m)
+      setTasks(t)
       setSellers(s.filter((u) => u.perfil_acess === 'Vendedor'))
       setVendas(v)
     } catch (e) {
@@ -82,9 +86,10 @@ export default function Index() {
 
   useRealtime('Leads', () => loadData())
   useRealtime('Metas', () => loadData())
+  useRealtime('tasks', () => loadData())
   useRealtime('vendas_hotmart', () => loadData())
 
-  const { filteredLeads, filteredVendas, filteredMetas } = useMemo(() => {
+  const { filteredLeads, filteredTasks, filteredVendas, filteredMetas } = useMemo(() => {
     const now = new Date()
     const startDate =
       period === 'custom' && customStart
@@ -92,6 +97,7 @@ export default function Index() {
         : startOfDay(subDays(now, parseInt(period) || 30))
     const endDate = period === 'custom' && customEnd ? endOfDay(parseISO(customEnd)) : endOfDay(now)
 
+    // Filtro de Leads (Considera quem foi criado no período)
     const fLeads = leads.filter((l) => {
       const d = parseISO(l.created)
       const dateMatch = isAfter(d, startDate) && isBefore(d, endDate)
@@ -99,10 +105,19 @@ export default function Index() {
       return dateMatch && sellerMatch
     })
 
+    // Filtro de Tarefas (Para calcular Consultorias geradas no período)
+    const fTasks = tasks.filter((t) => {
+      const d = t.due_date ? parseISO(t.due_date) : parseISO(t.created)
+      const dateMatch = isAfter(d, startDate) && isBefore(d, endDate)
+      const respId = t.user_resp || t.user_id
+      const sellerMatch = sellerId === 'todos' || respId === sellerId
+      return dateMatch && sellerMatch
+    })
+
+    // Filtro de Vendas Hotmart
     const fVendas = vendas.filter((v) => {
       const d = v.data_pedido ? parseISO(v.data_pedido) : parseISO(v.created)
       const dateMatch = isAfter(d, startDate) && isBefore(d, endDate)
-
       let sellerMatch = true
       if (sellerId !== 'todos') {
         const lead = leads.find((l) => l.id === v.lead_id)
@@ -112,29 +127,37 @@ export default function Index() {
       return dateMatch && sellerMatch
     })
 
+    // Filtra as METAS que vigentes neste período selecionado (se houver cruzamento de datas)
     const fMetas = metas.filter((m) => {
-      const dateMatch = true
+      const metaIn = parseISO(m.periodo_in)
+      const metaFin = parseISO(m.periodo_fin)
+      // Verifica se a meta "toca" no período filtrado
+      const dateMatch = isBefore(metaIn, endDate) && isAfter(metaFin, startDate)
       const sellerMatch = sellerId === 'todos' || m.vend_resp === sellerId
       return dateMatch && sellerMatch
     })
 
-    return { filteredLeads: fLeads, filteredVendas: fVendas, filteredMetas: fMetas }
-  }, [leads, vendas, metas, period, sellerId, customStart, customEnd])
+    return {
+      filteredLeads: fLeads,
+      filteredTasks: fTasks,
+      filteredVendas: fVendas,
+      filteredMetas: fMetas,
+    }
+  }, [leads, tasks, vendas, metas, period, sellerId, customStart, customEnd])
 
   const kpis = useMemo(() => {
     const validVendas = filteredVendas.filter((v) => {
       const status = (v.status_compra || '').toUpperCase()
-      return (
-        status === 'APPROVED' ||
-        status === 'COMPLETE' ||
-        status === 'COMPLETED' ||
-        status === 'APROVADA' ||
-        status === 'COMPLETA' ||
-        status === 'COMPLETO' ||
-        status === 'PAID' ||
-        status === 'PAGO' ||
-        status === 'PAYMENT_CONFIRMED'
-      )
+      return [
+        'APPROVED',
+        'COMPLETE',
+        'COMPLETED',
+        'APROVADA',
+        'COMPLETA',
+        'PAGO',
+        'PAID',
+        'PAYMENT_CONFIRMED',
+      ].includes(status)
     })
 
     const fatTotal = validVendas.reduce((acc, v) => acc + (v.preco_total || 0), 0)
@@ -170,22 +193,37 @@ export default function Index() {
   }, [filteredLeads])
 
   const chartData = useMemo(() => {
+    // Calcula Realizado dinamicamente
+    const rLeads = filteredLeads.length
+    const rAbordagens = filteredLeads.filter(
+      (l) => l.etapa_pipeline && l.etapa_pipeline !== '1. Novo Lead',
+    ).length
+    const rConsultas = filteredTasks.filter((t) => t.tp_tarefa === 'Reunião / Consultoria').length
+
     const agg = {
-      Leads: { meta: 0, realizado: kpis.leadsTotais },
-      Abordagens: { meta: 0, realizado: 0 },
-      Consultas: { meta: 0, realizado: 0 },
+      Leads: { meta: 0, realizado: rLeads },
+      Abordagens: { meta: 0, realizado: rAbordagens },
+      Consultas: { meta: 0, realizado: rConsultas },
       Vendas: { meta: 0, realizado: kpis.qtVendas },
       Faturamento: { meta: 0, realizado: kpis.fatTotal },
     }
 
+    // Soma os "Objetivos/Metas" e os Ajustes Manuais do período filtrado
     filteredMetas.forEach((m) => {
       agg.Leads.meta += m.m_leads_recebidos || 0
+      agg.Leads.realizado += m.ajuste_leads || 0
+
       agg.Abordagens.meta += m.m_abord_prospec_ativa || 0
-      agg.Abordagens.realizado += m.r_abord_prospec_ativa || 0
+      agg.Abordagens.realizado += m.ajuste_abordagens || 0
+
       agg.Consultas.meta += m.m_apresent_consult || 0
-      agg.Consultas.realizado += m.r_apresent_consult || 0
+      agg.Consultas.realizado += m.ajuste_consultorias || 0
+
       agg.Vendas.meta += m.m_vendas || 0
+      agg.Vendas.realizado += m.ajuste_vendas || 0
+
       agg.Faturamento.meta += m.m_faturamento || 0
+      agg.Faturamento.realizado += m.ajuste_faturamento || 0
     })
 
     return [
@@ -195,24 +233,24 @@ export default function Index() {
       { name: 'Vendas', Meta: agg.Vendas.meta, Realizado: agg.Vendas.realizado },
       { name: 'Faturamento', Meta: agg.Faturamento.meta, Realizado: agg.Faturamento.realizado },
     ]
-  }, [filteredMetas, kpis])
+  }, [filteredMetas, filteredLeads, filteredTasks, kpis])
 
   if (loading) {
     return (
       <div className="flex h-full items-center justify-center bg-zinc-50">
-        <Loader2 className="h-6 w-6 animate-spin text-blue-500" />
+        <Loader2 className="h-6 w-6 animate-spin text-[#052136]" />
       </div>
     )
   }
 
   return (
     <div className="flex-1 flex flex-col h-full bg-slate-50/50 overflow-y-auto">
-      <div className="sticky top-0 z-10 flex items-center justify-between border-b border-zinc-200/60 bg-white/80 backdrop-blur-md px-8 py-4 bg-[#052136] text-[#ffff] text-[#ffff]">
+      <div className="sticky top-0 z-10 flex items-center justify-between border-b border-zinc-200/60 bg-[#052136] backdrop-blur-md px-8 py-4">
         <div className="flex flex-col">
-          <h1 className="text-2xl font-bold tracking-tight text-[#000000] bg-[#ffff] text-[#000000] not-italic">
+          <h1 className="text-2xl font-bold tracking-tight text-white not-italic">
             Dashboard de Vendas
           </h1>
-          <p className="text-sm text-zinc-500">
+          <p className="text-sm text-zinc-300">
             Acompanhe seus resultados comerciais em tempo real.
           </p>
         </div>
@@ -370,7 +408,9 @@ export default function Index() {
           <Card className="shadow-sm border-zinc-200/60">
             <CardHeader className="pb-2">
               <CardTitle className="text-lg">Meta versus Realizado</CardTitle>
-              <p className="text-sm text-zinc-500">Comparativo de metas e resultados do período</p>
+              <p className="text-sm text-zinc-500">
+                Comparativo de metas e resultados do período (Leads x Tarefas x Vendas)
+              </p>
             </CardHeader>
             <CardContent className="pt-4 h-[350px]">
               <ResponsiveContainer width="100%" height="100%">
@@ -398,7 +438,7 @@ export default function Index() {
                   />
                   <Legend iconType="circle" wrapperStyle={{ paddingTop: '20px' }} />
                   <Bar dataKey="Meta" fill="#10b981" radius={[4, 4, 0, 0]} maxBarSize={40} />
-                  <Bar dataKey="Realizado" fill="#3b82f6" radius={[4, 4, 0, 0]} maxBarSize={40} />
+                  <Bar dataKey="Realizado" fill="#052136" radius={[4, 4, 0, 0]} maxBarSize={40} />
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>

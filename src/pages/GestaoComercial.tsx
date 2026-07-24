@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo } from 'react'
 import { getMetas, MetaRecord, createMeta, updateMeta, deleteMeta } from '@/services/metas'
 import { getLeads, LeadRecord } from '@/services/leads'
+import { getTasks } from '@/services/tasks'
 import { getUsers } from '@/services/users'
 import pb from '@/lib/pocketbase/client'
 import { useRealtime } from '@/hooks/use-realtime'
@@ -40,6 +41,7 @@ export default function GestaoComercial() {
   const { user } = useAuth()
   const [metas, setMetas] = useState<MetaRecord[]>([])
   const [leads, setLeads] = useState<LeadRecord[]>([])
+  const [tasks, setTasks] = useState<any[]>([])
   const [vendas, setVendas] = useState<any[]>([])
   const [sellers, setSellers] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -49,14 +51,16 @@ export default function GestaoComercial() {
 
   const loadData = async () => {
     try {
-      const [mData, lData, uData, vData] = await Promise.all([
+      const [mData, lData, tData, uData, vData] = await Promise.all([
         getMetas(),
         getLeads(),
+        getTasks(),
         getUsers(),
         pb.collection('vendas_hotmart').getFullList(),
       ])
       setMetas(mData)
       setLeads(lData)
+      setTasks(tData)
       setSellers(uData.filter((u) => u.perfil_acess === 'Vendedor'))
       setVendas(vData)
     } catch (e) {
@@ -71,6 +75,7 @@ export default function GestaoComercial() {
   }, [])
   useRealtime('Metas', () => loadData())
   useRealtime('Leads', () => loadData())
+  useRealtime('tasks', () => loadData())
   useRealtime('vendas_hotmart', () => loadData())
 
   const computedMetas = useMemo(() => {
@@ -78,31 +83,55 @@ export default function GestaoComercial() {
       const pStart = startOfDay(parseISO(m.periodo_in))
       const pEnd = endOfDay(parseISO(m.periodo_fin))
 
+      // 1. Leads Recebidos (Criados no período para o vendedor)
       const mLeads = leads.filter(
         (l) =>
           l.vend_resp === m.vend_resp &&
           isAfter(parseISO(l.created), pStart) &&
           isBefore(parseISO(l.created), pEnd),
       )
+
+      // 2. Abordagens (Leads do período que NÃO estão na etapa 1)
+      const mAbordagens = mLeads.filter(
+        (l) => l.etapa_pipeline && l.etapa_pipeline !== '1. Novo Lead',
+      )
+
+      // 3. Consultorias (Tarefas do tipo Reunião/Consultoria criadas/agendadas no período)
+      const mConsultas = tasks.filter((t) => {
+        const d = t.due_date ? parseISO(t.due_date) : parseISO(t.created)
+        return (
+          (t.user_resp === m.vend_resp || t.user_id === m.vend_resp) &&
+          t.tp_tarefa === 'Reunião / Consultoria' &&
+          isAfter(d, pStart) &&
+          isBefore(d, pEnd)
+        )
+      })
+
+      // 4. Vendas (Vendas do Hotmart no período)
       const mSales = vendas.filter((v) => {
         const lead = leads.find((l) => l.id === v.lead_id)
         if (!lead || lead.vend_resp !== m.vend_resp) return false
         const d = v.data_pedido ? parseISO(v.data_pedido) : parseISO(v.created)
+        const status = (v.status_compra || '').toUpperCase()
         return (
           isAfter(d, pStart) &&
           isBefore(d, pEnd) &&
-          ['APPROVED', 'COMPLETE'].includes(v.status_compra)
+          ['APPROVED', 'COMPLETE', 'COMPLETED', 'APROVADA', 'COMPLETA', 'PAGO', 'PAID'].includes(
+            status,
+          )
         )
       })
 
       return {
         ...m,
         calc_leads: mLeads.length,
+        calc_abordagens: mAbordagens.length,
+        calc_consultorias: mConsultas.length,
         calc_vendas: mSales.length,
         calc_fatur: mSales.reduce((acc, v) => acc + (v.preco_total || 0), 0),
       }
     })
-  }, [metas, leads, vendas])
+  }, [metas, leads, tasks, vendas])
 
   const handleOpenModal = (meta: any = null) => {
     setEditingMeta(
@@ -115,11 +144,6 @@ export default function GestaoComercial() {
         m_apresent_consult: 0,
         m_vendas: 0,
         m_faturamento: 0,
-        r_leads_recebidos: 0,
-        r_abord_prospec_ativa: 0,
-        r_apresent_consult: 0,
-        r_vendas: 0,
-        r_faturamento: 0,
         ajuste_vendas: 0,
         ajuste_faturamento: 0,
         ajuste_leads: 0,
@@ -170,7 +194,7 @@ export default function GestaoComercial() {
   if (loading) {
     return (
       <div className="flex h-full items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-violet-500" />
+        <Loader2 className="h-6 w-6 animate-spin text-blue-500" />
       </div>
     )
   }
@@ -179,13 +203,13 @@ export default function GestaoComercial() {
     <div className="flex-1 flex flex-col h-full bg-zinc-50/50">
       <PageHeader
         title="Gestão Comercial"
-        description="Gerencie metas e resultados dos vendedores."
+        description="Gerencie metas e acompanhe os resultados automáticos dos vendedores."
       />
       <div className="px-8 pb-8 flex-1 flex flex-col">
         <div className="flex justify-end mb-6">
           <Button
             onClick={() => handleOpenModal()}
-            className="bg-emerald-500 hover:bg-emerald-600 text-white"
+            className="bg-[#052136] hover:bg-[#08304c] text-white"
           >
             <Plus className="h-4 w-4 mr-2" /> Nova Meta
           </Button>
@@ -312,7 +336,7 @@ export default function GestaoComercial() {
 
             <div className="grid grid-cols-2 gap-x-6 gap-y-4 pt-2">
               <div className="space-y-2">
-                <Label className="text-zinc-700">Meta: Leads Recebidos</Label>
+                <Label className="text-[#052136] font-bold">🎯 Meta: Leads Recebidos</Label>
                 <Input
                   type="number"
                   value={editingMeta?.m_leads_recebidos || 0}
@@ -322,7 +346,7 @@ export default function GestaoComercial() {
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-zinc-700">Meta: Abordagens</Label>
+                <Label className="text-[#052136] font-bold">🎯 Meta: Abordagens</Label>
                 <Input
                   type="number"
                   value={editingMeta?.m_abord_prospec_ativa || 0}
@@ -335,7 +359,7 @@ export default function GestaoComercial() {
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-zinc-700">Meta: Consultorias</Label>
+                <Label className="text-[#052136] font-bold">🎯 Meta: Consultorias</Label>
                 <Input
                   type="number"
                   value={editingMeta?.m_apresent_consult || 0}
@@ -345,7 +369,7 @@ export default function GestaoComercial() {
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-zinc-700">Meta: Vendas</Label>
+                <Label className="text-[#052136] font-bold">🎯 Meta: Vendas</Label>
                 <Input
                   type="number"
                   value={editingMeta?.m_vendas || 0}
@@ -355,7 +379,7 @@ export default function GestaoComercial() {
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-zinc-700">Meta: Faturamento</Label>
+                <Label className="text-[#052136] font-bold">🎯 Meta: Faturamento</Label>
                 <Input
                   type="number"
                   value={editingMeta?.m_faturamento || 0}
@@ -366,83 +390,53 @@ export default function GestaoComercial() {
               </div>
             </div>
 
-            <div className="border-t border-zinc-200 my-2 pt-4 grid grid-cols-2 gap-x-6 gap-y-4">
-              <div className="space-y-2">
-                <Label className="text-zinc-500">Realizado: Leads</Label>
-                <Input
-                  type="number"
-                  disabled
-                  value={editingMeta?.r_leads_recebidos || 0}
-                  onChange={(e) =>
-                    setEditingMeta({ ...editingMeta, r_leads_recebidos: Number(e.target.value) })
-                  }
-                />
-                <p className="text-[10px] text-zinc-400">
-                  Calculado dinamicamente:{' '}
+            <div className="border-t border-emerald-100 bg-emerald-50/50 rounded-lg p-4 my-2 grid grid-cols-2 gap-x-6 gap-y-4">
+              <div className="col-span-2">
+                <h3 className="text-sm font-bold text-emerald-800 mb-1">
+                  Resultados Alcançados (Automático)
+                </h3>
+                <p className="text-[11px] text-emerald-600 mb-2">
+                  Calculado em tempo real com base nos movimentos do funil e tarefas.
+                </p>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-zinc-500 text-xs uppercase font-bold">Leads Recebidos</Label>
+                <div className="text-lg font-semibold text-zinc-900">
                   {computedMetas.find((m) => m.id === editingMeta?.id)?.calc_leads || 0}
-                </p>
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label className="text-zinc-500">Realizado: Abordagens</Label>
-                <Input
-                  type="number"
-                  disabled
-                  value={editingMeta?.r_abord_prospec_ativa || 0}
-                  onChange={(e) =>
-                    setEditingMeta({
-                      ...editingMeta,
-                      r_abord_prospec_ativa: Number(e.target.value),
-                    })
-                  }
-                />
+              <div className="space-y-1">
+                <Label className="text-zinc-500 text-xs uppercase font-bold">Abordagens</Label>
+                <div className="text-lg font-semibold text-zinc-900">
+                  {computedMetas.find((m) => m.id === editingMeta?.id)?.calc_abordagens || 0}
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label className="text-zinc-500">Realizado: Consultorias</Label>
-                <Input
-                  type="number"
-                  disabled
-                  value={editingMeta?.r_apresent_consult || 0}
-                  onChange={(e) =>
-                    setEditingMeta({ ...editingMeta, r_apresent_consult: Number(e.target.value) })
-                  }
-                />
+              <div className="space-y-1">
+                <Label className="text-zinc-500 text-xs uppercase font-bold">Consultorias</Label>
+                <div className="text-lg font-semibold text-zinc-900">
+                  {computedMetas.find((m) => m.id === editingMeta?.id)?.calc_consultorias || 0}
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label className="text-zinc-500">Realizado: Vendas</Label>
-                <Input
-                  type="number"
-                  disabled
-                  value={editingMeta?.r_vendas || 0}
-                  onChange={(e) =>
-                    setEditingMeta({ ...editingMeta, r_vendas: Number(e.target.value) })
-                  }
-                />
-                <p className="text-[10px] text-zinc-400">
-                  Calculado dinamicamente:{' '}
+              <div className="space-y-1">
+                <Label className="text-zinc-500 text-xs uppercase font-bold">Vendas</Label>
+                <div className="text-lg font-semibold text-zinc-900">
                   {computedMetas.find((m) => m.id === editingMeta?.id)?.calc_vendas || 0}
-                </p>
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label className="text-zinc-500">Realizado: Faturamento</Label>
-                <Input
-                  type="number"
-                  disabled
-                  value={editingMeta?.r_faturamento || 0}
-                  onChange={(e) =>
-                    setEditingMeta({ ...editingMeta, r_faturamento: Number(e.target.value) })
-                  }
-                />
-                <p className="text-[10px] text-zinc-400">
-                  Calculado dinamicamente:{' '}
-                  {computedMetas.find((m) => m.id === editingMeta?.id)?.calc_fatur?.toFixed(2) || 0}
-                </p>
+              <div className="space-y-1">
+                <Label className="text-zinc-500 text-xs uppercase font-bold">Faturamento</Label>
+                <div className="text-lg font-semibold text-zinc-900">
+                  R${' '}
+                  {computedMetas.find((m) => m.id === editingMeta?.id)?.calc_fatur?.toFixed(2) ||
+                    '0.00'}
+                </div>
               </div>
             </div>
           </div>
 
           {user?.perfil_acess === 'Gestor' && (
             <div className="border-t border-zinc-200 my-2 pt-4 px-1">
-              <h3 className="text-sm font-bold text-zinc-700 mb-1">Ajustes Manuais (Gestor)</h3>
+              <h3 className="text-sm font-bold text-zinc-700 mb-1">Ajustes Manuais (Opcional)</h3>
               <p className="text-[11px] text-zinc-400 mb-3">
                 Valores manuais somados aos realizados automáticos.
               </p>
@@ -510,7 +504,7 @@ export default function GestaoComercial() {
             <Button variant="outline" onClick={() => setIsModalOpen(false)}>
               Cancelar
             </Button>
-            <Button onClick={handleSave} className="bg-emerald-500 hover:bg-emerald-600 text-white">
+            <Button onClick={handleSave} className="bg-[#052136] hover:bg-[#08304c] text-white">
               Salvar
             </Button>
           </DialogFooter>
