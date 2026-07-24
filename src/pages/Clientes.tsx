@@ -67,7 +67,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
+} from '@/components/ui/alert-dialog'
 
 export default function Clientes() {
   const { user } = useAuth()
@@ -197,7 +197,7 @@ export default function Clientes() {
     }
   }
 
-  cconst promptDelete = (id: string) => {
+  const promptDelete = (id: string) => {
     setClienteToDelete(id)
     setDeleteDialogOpen(true)
   }
@@ -292,7 +292,7 @@ export default function Clientes() {
                         variant="ghost"
                         size="icon"
                         className="h-8 w-8 text-zinc-500 hover:text-red-600 hover:bg-red-50"
-                        onClick={() => promptDelete(c.id)} {/* ATUALIZE AQUI */}
+                        onClick={() => promptDelete(c.id)}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -671,11 +671,12 @@ export default function Clientes() {
           <AlertDialogHeader>
             <AlertDialogTitle>Você tem certeza absoluta?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta ação não pode ser desfeita. Isso excluirá permanentemente o registro e removerá os dados de nossos servidores.
+              Esta ação não pode ser desfeita. Isso excluirá permanentemente o registro e removerá
+              os dados de nossos servidores.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel 
+            <AlertDialogCancel
               onClick={() => {
                 setDeleteDialogOpen(false)
               }}
@@ -683,8 +684,8 @@ export default function Clientes() {
             >
               Cancelar
             </AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={confirmDelete} 
+            <AlertDialogAction
+              onClick={confirmDelete}
               className="bg-red-600 hover:bg-red-700 text-white"
             >
               Sim, excluir
