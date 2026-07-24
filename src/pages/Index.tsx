@@ -45,6 +45,21 @@ import {
 } from '@/components/ui/table'
 import { Input } from '@/components/ui/input'
 
+// Função tradutora para lidar com as datas que vêm com barra (/) do CSV
+const parseCustomDate = (dateStr?: string, fallbackStr?: string) => {
+  const target = dateStr || fallbackStr || ''
+  if (!target) return new Date()
+
+  if (target.includes('/')) {
+    const [datePart, timePart] = target.split(' ')
+    const [day, month, year] = datePart.split('/')
+    if (day && month && year) {
+      return new Date(`${year}-${month}-${day}T${timePart || '00:00:00'}`)
+    }
+  }
+  return parseISO(target.replace(' ', 'T'))
+}
+
 export default function Index() {
   const [leads, setLeads] = useState<LeadRecord[]>([])
   const [metas, setMetas] = useState<MetaRecord[]>([])
@@ -93,11 +108,12 @@ export default function Index() {
     const now = new Date()
     const startDate =
       period === 'custom' && customStart
-        ? startOfDay(parseISO(customStart))
+        ? startOfDay(parseCustomDate(customStart))
         : startOfDay(subDays(now, parseInt(period) || 30))
-    const endDate = period === 'custom' && customEnd ? endOfDay(parseISO(customEnd)) : endOfDay(now)
+    const endDate =
+      period === 'custom' && customEnd ? endOfDay(parseCustomDate(customEnd)) : endOfDay(now)
 
-    // Filtro de Leads (Considera quem foi criado no período)
+    // Filtro de Leads
     const fLeads = leads.filter((l) => {
       const d = parseISO(l.created)
       const dateMatch = isAfter(d, startDate) && isBefore(d, endDate)
@@ -105,33 +121,33 @@ export default function Index() {
       return dateMatch && sellerMatch
     })
 
-    // Filtro de Tarefas (Para calcular Consultorias geradas no período)
+    // Filtro de Tarefas
     const fTasks = tasks.filter((t) => {
-      const d = t.due_date ? parseISO(t.due_date) : parseISO(t.created)
+      const d = parseISO(t.due_date || t.created)
       const dateMatch = isAfter(d, startDate) && isBefore(d, endDate)
       const respId = t.user_resp || t.user_id
       const sellerMatch = sellerId === 'todos' || respId === sellerId
       return dateMatch && sellerMatch
     })
 
-    // Filtro de Vendas Hotmart
+    // Filtro de Vendas Hotmart (Agora imune a erros de data do CSV)
     const fVendas = vendas.filter((v) => {
-      const d = v.data_pedido ? parseISO(v.data_pedido) : parseISO(v.created)
+      const d = parseCustomDate(v.data_pedido, v.created)
       const dateMatch = isAfter(d, startDate) && isBefore(d, endDate)
       let sellerMatch = true
+
       if (sellerId !== 'todos') {
         const lead = leads.find((l) => l.id === v.lead_id)
         if (lead && lead.vend_resp !== sellerId) sellerMatch = false
-        if (!lead) sellerMatch = false
+        if (!lead) sellerMatch = false // Se estou filtrando por Vendedor, vendas órfãs são ocultadas
       }
       return dateMatch && sellerMatch
     })
 
-    // Filtra as METAS que vigentes neste período selecionado (se houver cruzamento de datas)
+    // Filtra as METAS vigentes
     const fMetas = metas.filter((m) => {
       const metaIn = parseISO(m.periodo_in)
       const metaFin = parseISO(m.periodo_fin)
-      // Verifica se a meta "toca" no período filtrado
       const dateMatch = isBefore(metaIn, endDate) && isAfter(metaFin, startDate)
       const sellerMatch = sellerId === 'todos' || m.vend_resp === sellerId
       return dateMatch && sellerMatch
@@ -147,13 +163,16 @@ export default function Index() {
 
   const kpis = useMemo(() => {
     const validVendas = filteredVendas.filter((v) => {
-      const status = (v.status_compra || '').toUpperCase()
+      const status = (v.status_compra || '').toUpperCase().trim()
+      // Adicionado variações mais amplas de status de pagamento
       return [
         'APPROVED',
         'COMPLETE',
         'COMPLETED',
         'APROVADA',
+        'APROVADO',
         'COMPLETA',
+        'COMPLETO',
         'PAGO',
         'PAID',
         'PAYMENT_CONFIRMED',
@@ -193,7 +212,6 @@ export default function Index() {
   }, [filteredLeads])
 
   const chartData = useMemo(() => {
-    // Calcula Realizado dinamicamente
     const rLeads = filteredLeads.length
     const rAbordagens = filteredLeads.filter(
       (l) => l.etapa_pipeline && l.etapa_pipeline !== '1. Novo Lead',
@@ -208,7 +226,6 @@ export default function Index() {
       Faturamento: { meta: 0, realizado: kpis.fatTotal },
     }
 
-    // Soma os "Objetivos/Metas" e os Ajustes Manuais do período filtrado
     filteredMetas.forEach((m) => {
       agg.Leads.meta += m.m_leads_recebidos || 0
       agg.Leads.realizado += m.ajuste_leads || 0
