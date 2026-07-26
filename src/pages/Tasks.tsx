@@ -185,23 +185,34 @@ export default function Tasks() {
         tp_tarefa: newTask.tp_tarefa,
       }
 
-      if (newTask.lead_id) payload.lead_id = newTask.lead_id
-      if (newTask.client_id) payload.client_id = newTask.client_id
+      // Correção: Se tiver lead_id e NÃO for a palavra 'none', salva o ID. Senão, envia vazio.
+      if (newTask.lead_id && newTask.lead_id !== 'none') {
+        payload.lead_id = newTask.lead_id
+      } else {
+        payload.lead_id = ''
+      }
+
+      // Correção: Mesma regra para o client_id
+      if (newTask.client_id && newTask.client_id !== 'none') {
+        payload.client_id = newTask.client_id
+      } else {
+        payload.client_id = ''
+      }
 
       if (newTask.id) {
         await updateTask(newTask.id, payload)
-        toast.success('Tarefa atualizada', {
+        toast.success('Tarefa atualizada com sucesso', {
           style: { background: '#10b981', color: 'white', border: 'none' },
         })
       } else {
         payload.completed = false
-        // O user_id é o "criador" da tarefa.
         payload.user_id = user?.id
         await createTask(payload)
         toast.success('Tarefa criada com sucesso', {
           style: { background: '#10b981', color: 'white', border: 'none' },
         })
       }
+
       setIsCreateOpen(false)
       setNewTask({
         id: '',
