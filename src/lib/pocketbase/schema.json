@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-26T19:32:50.725Z",
+  "generatedAt": "2026-07-26T19:58:46.266Z",
   "collections": [
     {
       "name": "users",
@@ -1175,7 +1175,7 @@
       "apiRules": {
         "list": "@request.auth.id != '' && (@request.auth.perfil_acess = 'Gestor' || @request.auth.perfil_acess = 'Suporte' || user_id = @request.auth.id || user_resp = @request.auth.id)",
         "view": "@request.auth.id != '' && (@request.auth.perfil_acess = 'Gestor' || @request.auth.perfil_acess = 'Suporte' || user_id = @request.auth.id || user_resp = @request.auth.id)",
-        "create": "@request.auth.id != \"\"",
+        "create": "@request.auth.id != ''",
         "update": "@request.auth.id != '' && (@request.auth.perfil_acess = 'Gestor' || @request.auth.perfil_acess = 'Suporte' || user_id = @request.auth.id || user_resp = @request.auth.id)",
         "delete": "@request.auth.id != '' && (@request.auth.perfil_acess = 'Gestor' || @request.auth.perfil_acess = 'Suporte' || user_id = @request.auth.id || user_resp = @request.auth.id)"
       },

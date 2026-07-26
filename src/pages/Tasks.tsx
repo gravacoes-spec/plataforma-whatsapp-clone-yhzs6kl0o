@@ -6,6 +6,7 @@ import { getBdClientes, BdClienteRecord } from '@/services/bd-clientes'
 import { getUsers } from '@/services/users'
 import { useRealtime } from '@/hooks/use-realtime'
 import { useAuth } from '@/hooks/use-auth'
+import { extractFieldErrors, type FieldErrors } from '@/lib/pocketbase/errors'
 import {
   format,
   isPast,
@@ -57,15 +58,7 @@ import {
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 
-const TASK_TYPES = [
-  'Ligação',
-  'WhatsApp',
-  'E-mail',
-  'Reunião / Consultoria',
-  'Follow-up',
-  'Administrativo',
-  'Outro',
-]
+const TASK_TYPES = ['Reunião/Consultoria', 'Follow-up', 'Mentoria', 'E-mail', 'Outra']
 
 export default function Tasks() {
   const { user } = useAuth()
@@ -81,6 +74,7 @@ export default function Tasks() {
   const [filterType, setFilterType] = useState('all')
   const [currentMonth, setCurrentMonth] = useState(new Date())
   const [isCreateOpen, setIsCreateOpen] = useState(false)
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({})
   const [newTask, setNewTask] = useState({
     id: '',
     description: '',
@@ -180,23 +174,17 @@ export default function Tasks() {
     try {
       const payload: any = {
         description: newTask.description,
-        due_date: newTask.due_date ? new Date(newTask.due_date).toISOString() : '',
+        due_date: newTask.due_date ? new Date(newTask.due_date).toISOString() : null,
         user_resp: responsavelFinal,
-        tp_tarefa: newTask.tp_tarefa,
+        tp_tarefa: newTask.tp_tarefa || null,
       }
 
-      // Correção: Se tiver lead_id e NÃO for a palavra 'none', salva o ID. Senão, envia vazio.
       if (newTask.lead_id && newTask.lead_id !== 'none') {
         payload.lead_id = newTask.lead_id
-      } else {
-        payload.lead_id = ''
       }
 
-      // Correção: Mesma regra para o client_id
       if (newTask.client_id && newTask.client_id !== 'none') {
         payload.client_id = newTask.client_id
-      } else {
-        payload.client_id = ''
       }
 
       if (newTask.id) {
@@ -214,6 +202,7 @@ export default function Tasks() {
       }
 
       setIsCreateOpen(false)
+      setFieldErrors({})
       setNewTask({
         id: '',
         description: '',
@@ -230,9 +219,14 @@ export default function Tasks() {
       loadData()
     } catch (e) {
       console.error(e)
-      toast.error('Erro ao salvar tarefa. Verifique as permissões.', {
-        style: { background: '#ef4444', color: 'white', border: 'none' },
-      })
+      const errors = extractFieldErrors(e)
+      if (Object.keys(errors).length > 0) {
+        setFieldErrors(errors)
+      } else {
+        toast.error('Erro ao salvar tarefa. Verifique as permissões.', {
+          style: { background: '#ef4444', color: 'white', border: 'none' },
+        })
+      }
     }
   }
 
@@ -601,9 +595,16 @@ export default function Tasks() {
               <Label>Descrição</Label>
               <Input
                 value={newTask.description}
-                onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
+                onChange={(e) => {
+                  setNewTask({ ...newTask, description: e.target.value })
+                  if (fieldErrors.description)
+                    setFieldErrors((p) => ({ ...p, description: undefined }))
+                }}
                 placeholder="Descrição da tarefa"
               />
+              {fieldErrors.description && (
+                <p className="text-sm text-red-500">{fieldErrors.description}</p>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -612,14 +613,24 @@ export default function Tasks() {
                 <Input
                   type="date"
                   value={newTask.due_date}
-                  onChange={(e) => setNewTask({ ...newTask, due_date: e.target.value })}
+                  onChange={(e) => {
+                    setNewTask({ ...newTask, due_date: e.target.value })
+                    if (fieldErrors.due_date) setFieldErrors((p) => ({ ...p, due_date: undefined }))
+                  }}
                 />
+                {fieldErrors.due_date && (
+                  <p className="text-sm text-red-500">{fieldErrors.due_date}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label>Tipo de Tarefa</Label>
                 <Select
                   value={newTask.tp_tarefa}
-                  onValueChange={(v) => setNewTask({ ...newTask, tp_tarefa: v })}
+                  onValueChange={(v) => {
+                    setNewTask({ ...newTask, tp_tarefa: v })
+                    if (fieldErrors.tp_tarefa)
+                      setFieldErrors((p) => ({ ...p, tp_tarefa: undefined }))
+                  }}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione..." />
@@ -632,6 +643,9 @@ export default function Tasks() {
                     ))}
                   </SelectContent>
                 </Select>
+                {fieldErrors.tp_tarefa && (
+                  <p className="text-sm text-red-500">{fieldErrors.tp_tarefa}</p>
+                )}
               </div>
             </div>
 
@@ -639,7 +653,10 @@ export default function Tasks() {
               <Label>Responsável</Label>
               <Select
                 value={newTask.user_resp}
-                onValueChange={(v) => setNewTask({ ...newTask, user_resp: v })}
+                onValueChange={(v) => {
+                  setNewTask({ ...newTask, user_resp: v })
+                  if (fieldErrors.user_resp) setFieldErrors((p) => ({ ...p, user_resp: undefined }))
+                }}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione um responsável" />
@@ -652,6 +669,9 @@ export default function Tasks() {
                   ))}
                 </SelectContent>
               </Select>
+              {fieldErrors.user_resp && (
+                <p className="text-sm text-red-500">{fieldErrors.user_resp}</p>
+              )}
             </div>
 
             {user?.perfil_acess !== 'Mentor(a)' && (
@@ -673,6 +693,9 @@ export default function Tasks() {
                     ))}
                   </SelectContent>
                 </Select>
+                {fieldErrors.lead_id && (
+                  <p className="text-sm text-red-500">{fieldErrors.lead_id}</p>
+                )}
               </div>
             )}
 
@@ -695,6 +718,9 @@ export default function Tasks() {
                     ))}
                   </SelectContent>
                 </Select>
+                {fieldErrors.client_id && (
+                  <p className="text-sm text-red-500">{fieldErrors.client_id}</p>
+                )}
               </div>
             )}
           </div>
