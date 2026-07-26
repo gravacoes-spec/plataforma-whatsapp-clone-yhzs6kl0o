@@ -3,7 +3,16 @@ import { getLeads, updateLead, createLead, deleteLead, LeadRecord } from '@/serv
 import { getUsers } from '@/services/users'
 import { getVendasByLeadAndEmail } from '@/services/hotmart'
 import { useRealtime } from '@/hooks/use-realtime'
-import { Plus, Search, Loader2, Pencil, Trash2, SlidersHorizontal, ShoppingBag } from 'lucide-react'
+import {
+  Plus,
+  Search,
+  Loader2,
+  Pencil,
+  Trash2,
+  SlidersHorizontal,
+  ShoppingBag,
+  Download,
+} from 'lucide-react'
 import { useSearchParams } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -216,6 +225,41 @@ export default function Leads() {
     }
   }
 
+  const exportToCsv = () => {
+    const headers = [
+      'Nome',
+      'Email',
+      'Telefone',
+      'Etapa Pipeline',
+      'Vendedor Resp.',
+      'Score Comercial',
+      'Concurso Alvo',
+      'Tags/Notas',
+    ]
+    const csvContent = [
+      headers.join(','),
+      ...filteredLeads.map((l) => {
+        const vendorName = (l as any).expand?.vend_resp?.name || 'Sem vendedor'
+        return [
+          `"${(l.name || '').replace(/"/g, '""')}"`,
+          `"${(l.email || '').replace(/"/g, '""')}"`,
+          `"${(l.phone || '').replace(/"/g, '""')}"`,
+          `"${(l.etapa_pipeline || '').replace(/"/g, '""')}"`,
+          `"${vendorName.replace(/"/g, '""')}"`,
+          `"${l.score_comerc || 0}"`,
+          `"${(l.concurso_alvo || '').replace(/"/g, '""')}"`,
+          `"${(l.historico_notas || '').replace(/"/g, '""')}"`,
+        ].join(',')
+      }),
+    ].join('\n')
+
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+    link.href = URL.createObjectURL(blob)
+    link.download = `leads_pf_${format(new Date(), 'yyyyMMdd_HHmm')}.csv`
+    link.click()
+  }
+
   if (loading) {
     return (
       <div className="flex h-full items-center justify-center">
@@ -228,11 +272,8 @@ export default function Leads() {
     <div className="flex-1 flex flex-col h-full bg-zinc-50/50">
       <PageHeader title="Leads" description="Gerencie seus contatos e clientes em potencial." />
       <div className="px-8 pb-8 flex-1 flex flex-col">
-        {/* BARRA DE PESQUISA E FILTROS RÁPIDOS */}
         <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between mb-6 gap-4">
-          {/* Grupo de Busca e Filtros */}
           <div className="flex flex-col sm:flex-row w-full xl:w-auto items-start sm:items-center gap-3">
-            {/* Busca */}
             <div className="relative w-full sm:w-72">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
               <Input
@@ -243,7 +284,6 @@ export default function Leads() {
               />
             </div>
 
-            {/* Filtro: Pipeline (Agora visível diretamente na barra) */}
             <Select value={filterPipeline} onValueChange={setFilterPipeline}>
               <SelectTrigger className="w-full sm:w-[220px] bg-white shadow-sm border-zinc-200">
                 <SelectValue placeholder="Etapa do Pipeline" />
@@ -258,7 +298,6 @@ export default function Leads() {
               </SelectContent>
             </Select>
 
-            {/* Filtro: Vendedor (Agora visível diretamente na barra) */}
             <Select value={filterSeller} onValueChange={setFilterSeller}>
               <SelectTrigger className="w-full sm:w-[220px] bg-white shadow-sm border-zinc-200">
                 <SelectValue placeholder="Vendedor Responsável" />
@@ -273,7 +312,6 @@ export default function Leads() {
               </SelectContent>
             </Select>
 
-            {/* Botão de Limpar Filtros (Aparece apenas se houver filtros ativos) */}
             {(filterPipeline !== 'all' ||
               filterSeller !== 'all' ||
               search !== '' ||
@@ -297,10 +335,7 @@ export default function Leads() {
             )}
           </div>
 
-          {/* Grupo de Ações Principais */}
-          <div className="flex items-center gap-3 w-full xl:w-auto mt-2 xl:mt-0">
-            {/* O botão de Filtros Laterais fica aqui caso você queira adicionar mais opções no futuro (como data, score, etc).
-                Dei uma cor de fundo sólida para ele não ficar transparente. */}
+          <div className="flex flex-wrap items-center gap-3 w-full xl:w-auto mt-2 xl:mt-0">
             <Button
               variant="secondary"
               className="bg-zinc-100 hover:bg-zinc-200 text-zinc-900 border border-zinc-200 shadow-sm flex-1 xl:flex-initial justify-center"
@@ -314,6 +349,14 @@ export default function Leads() {
                     (filterConcurso !== '' ? 1 : 0)}
                 </span>
               )}
+            </Button>
+
+            <Button
+              onClick={exportToCsv}
+              variant="outline"
+              className="text-emerald-700 border-emerald-200 hover:bg-emerald-50 flex-1 xl:flex-initial"
+            >
+              <Download className="h-4 w-4 mr-2" /> Exportar CSV
             </Button>
 
             <Button

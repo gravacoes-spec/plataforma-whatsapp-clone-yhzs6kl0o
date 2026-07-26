@@ -38,7 +38,7 @@ export default function Login() {
         description: getErrorMessage(error),
       })
     } else {
-      navigate('/connection-setup')
+      navigate('/crm/tasks')
     }
   }
 

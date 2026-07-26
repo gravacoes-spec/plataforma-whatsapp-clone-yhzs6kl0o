@@ -119,7 +119,7 @@ export default function Layout() {
     { to: '/agents', label: 'Agentes IA', icon: Bot },
   ]
 
-  const crmNavItems = [
+  let crmNavItems = [
     { to: '/', label: 'Dashboard Comercial (BI)', icon: TrendingUp },
     { to: '/crm/leads', label: 'Leads', icon: Contact },
     { to: '/crm/clientes', label: 'Clientes', icon: UsersRound },
@@ -132,8 +132,11 @@ export default function Layout() {
     crmNavItems.push({ to: '/admin/users', label: 'Usuários e Mentores', icon: Settings2 })
   }
 
-  // Verifica se o usuário NÃO é mentor para mostrar Hotmart e WhatsApp
+  // Restrição específica para Mentores
   const isNotMentor = user?.perfil_acess !== 'Mentor(a)'
+  if (!isNotMentor) {
+    crmNavItems = crmNavItems.filter((item) => ['/crm/clientes', '/crm/tasks'].includes(item.to))
+  }
 
   return (
     <SidebarProvider className="bg-white">
@@ -183,7 +186,6 @@ export default function Layout() {
             })}
           </SidebarMenu>
 
-          {/* Oculta a seção Hotmart para Mentores */}
           {isNotMentor && (
             <>
               <div className="px-2 pb-2 pt-6 text-[11px] font-semibold uppercase tracking-wider text-zinc-400">
@@ -216,7 +218,6 @@ export default function Layout() {
             </>
           )}
 
-          {/* Oculta a seção WhatsApp para Mentores */}
           {isNotMentor && (
             <>
               <div className="px-2 pb-2 pt-6 text-[11px] font-semibold uppercase tracking-wider text-zinc-400">

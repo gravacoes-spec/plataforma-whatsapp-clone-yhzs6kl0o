@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import {
   getBdClientes,
   createBdCliente,
@@ -27,6 +27,7 @@ import {
   Calendar as CalendarIcon,
   Bot,
   ShoppingBag,
+  Download,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -79,6 +80,9 @@ export default function Clientes() {
   const [sellers, setSellers] = useState<any[]>([])
 
   const [search, setSearch] = useState('')
+  const [filterProduto, setFilterProduto] = useState('all')
+  const [filterMentor, setFilterMentor] = useState('all')
+
   const [loading, setLoading] = useState(true)
 
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -100,10 +104,8 @@ export default function Clientes() {
       setLeads(leadData)
       setUsers(usersData)
 
-      // 1. Identifica os mentores ativos na tabela bd_mentor
       const activeMentors = mentorsData.filter((m) => m.ativo)
 
-      // 2. Filtra os usuários que têm perfil 'Mentor(a)' e cruza com os ativos (por email OU nome)
       setMentors(
         usersData.filter((u) => {
           if (u.perfil_acess !== 'Mentor(a)') return false
@@ -130,16 +132,26 @@ export default function Clientes() {
 
   useRealtime('bd_clientes', () => loadData())
 
+  // Extrair produtos únicos para popular o filtro
+  const uniqueProducts = useMemo(() => {
+    const products = clientes.map((c) => c.Nome_Prod).filter(Boolean) as string[]
+    return Array.from(new Set(products))
+  }, [clientes])
+
   useEffect(() => {
     setFilteredClientes(
-      clientes.filter(
-        (c) =>
+      clientes.filter((c) => {
+        const matchSearch =
           (c.Aluno_a || '').toLowerCase().includes(search.toLowerCase()) ||
           (c.email || '').toLowerCase().includes(search.toLowerCase()) ||
-          (c.Telefone || '').includes(search),
-      ),
+          (c.Telefone || '').includes(search)
+        const matchProduto = filterProduto === 'all' || c.Nome_Prod === filterProduto
+        const matchMentor = filterMentor === 'all' || c.Mentor_a === filterMentor
+
+        return matchSearch && matchProduto && matchMentor
+      }),
     )
-  }, [search, clientes])
+  }, [search, filterProduto, filterMentor, clientes])
 
   useEffect(() => {
     if (editingCliente?.Vend_Resp_Lead || editingCliente?.email) {
@@ -169,7 +181,6 @@ export default function Clientes() {
       })
       toast.success('Período salvo no histórico')
       getMentoriaPeriodos(editingCliente.id).then(setMentoriaHistory)
-      // Clear active fields
       setEditingCliente({
         ...editingCliente,
         Data_inicio: '',
@@ -215,6 +226,41 @@ export default function Clientes() {
     }
   }
 
+  const exportToCsv = () => {
+    const headers = [
+      'Aluno',
+      'Email',
+      'Telefone',
+      'Cidade',
+      'UF',
+      'Produto',
+      'Valor Pago',
+      'Mentor',
+    ]
+    const csvContent = [
+      headers.join(','),
+      ...filteredClientes.map((c) => {
+        const mentorName = users.find((u) => u.id === c.Mentor_a)?.name || 'Sem Mentor'
+        return [
+          `"${(c.Aluno_a || '').replace(/"/g, '""')}"`,
+          `"${(c.email || '').replace(/"/g, '""')}"`,
+          `"${(c.Telefone || '').replace(/"/g, '""')}"`,
+          `"${(c.Cidade || '').replace(/"/g, '""')}"`,
+          `"${(c.UF || '').replace(/"/g, '""')}"`,
+          `"${(c.Nome_Prod || '').replace(/"/g, '""')}"`,
+          `"${c.Vlr_Pago || 0}"`,
+          `"${mentorName.replace(/"/g, '""')}"`,
+        ].join(',')
+      }),
+    ].join('\n')
+
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+    link.href = URL.createObjectURL(blob)
+    link.download = `clientes_pf_${format(new Date(), 'yyyyMMdd_HHmm')}.csv`
+    link.click()
+  }
+
   if (loading) {
     return (
       <div className="flex h-full items-center justify-center bg-zinc-50">
@@ -230,16 +276,68 @@ export default function Clientes() {
         description="Gestão de alunos, histórico de compras e mentorias."
       />
       <div className="px-8 pb-8 flex-1 flex flex-col">
-        <div className="flex items-center justify-between mb-6">
-          <div className="relative w-80">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
-            <Input
-              placeholder="Buscar por aluno, email ou telefone..."
-              className="pl-9 bg-white"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
+        <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between mb-6 gap-4">
+          <div className="flex flex-col sm:flex-row w-full xl:w-auto items-start sm:items-center gap-3">
+            <div className="relative w-full sm:w-72">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
+              <Input
+                placeholder="Buscar por aluno, email ou telefone..."
+                className="pl-9 bg-white shadow-sm"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
+
+            <Select value={filterProduto} onValueChange={setFilterProduto}>
+              <SelectTrigger className="w-full sm:w-[200px] bg-white shadow-sm border-zinc-200">
+                <SelectValue placeholder="Produto" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os Produtos</SelectItem>
+                {uniqueProducts.map((p) => (
+                  <SelectItem key={p} value={p}>
+                    {p}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={filterMentor} onValueChange={setFilterMentor}>
+              <SelectTrigger className="w-full sm:w-[200px] bg-white shadow-sm border-zinc-200">
+                <SelectValue placeholder="Mentor(a)" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os Mentores</SelectItem>
+                {mentors.map((m) => (
+                  <SelectItem key={m.id} value={m.id}>
+                    {m.name || m.email}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {(filterProduto !== 'all' || filterMentor !== 'all' || search !== '') && (
+              <Button
+                variant="ghost"
+                className="text-zinc-500 hover:text-zinc-900 px-2"
+                onClick={() => {
+                  setFilterProduto('all')
+                  setFilterMentor('all')
+                  setSearch('')
+                }}
+              >
+                Limpar
+              </Button>
+            )}
           </div>
+
+          <Button
+            onClick={exportToCsv}
+            variant="outline"
+            className="text-emerald-700 border-emerald-200 hover:bg-emerald-50 w-full sm:w-auto"
+          >
+            <Download className="h-4 w-4 mr-2" /> Exportar CSV
+          </Button>
         </div>
 
         <div className="bg-white rounded-xl border border-zinc-200/60 overflow-hidden shadow-sm flex-1">
