@@ -102,7 +102,15 @@ export default function Tasks() {
       setTasks(taskData)
       setLeads(leadData)
       setClientes(clientData)
-      setUsers(usersData)
+
+      // Filtra os usuários disponíveis no Select dependendo de quem está logado
+      if (user?.perfil_acess === 'Gestor' || user?.perfil_acess === 'Suporte') {
+        // Gestor vê todo mundo (Mentores e Vendedores)
+        setUsers(usersData)
+      } else {
+        // Vendedor só vê Vendedores, Mentor só vê Mentores
+        setUsers(usersData.filter((u) => u.perfil_acess === user?.perfil_acess))
+      }
     } catch (e) {
       console.error(e)
     } finally {
@@ -137,6 +145,9 @@ export default function Tasks() {
       await updateTask(task.id, { completed: !task.completed })
     } catch {
       loadData()
+      toast.error('Erro ao atualizar tarefa', {
+        style: { background: '#ef4444', color: 'white', border: 'none' },
+      })
     }
   }
 
@@ -144,36 +155,52 @@ export default function Tasks() {
     try {
       setTasks((prev) => prev.filter((t) => t.id !== taskId))
       await deleteTask(taskId)
-      toast.success('Tarefa excluída')
+      toast.success('Tarefa excluída', {
+        style: { background: '#10b981', color: 'white', border: 'none' },
+      })
     } catch {
       loadData()
-      toast.error('Erro ao excluir')
+      toast.error('Erro ao excluir tarefa', {
+        style: { background: '#ef4444', color: 'white', border: 'none' },
+      })
     }
   }
 
   const handleCreateTask = async () => {
     if (!newTask.description.trim()) {
-      toast.error('Descrição é obrigatória')
+      toast.error('A descrição é obrigatória', {
+        style: { background: '#ef4444', color: 'white', border: 'none' },
+      })
       return
     }
+
+    // Se o Gestor não selecionar ninguém, ele mesmo fica como responsável.
+    const responsavelFinal = newTask.user_resp || user?.id
+
     try {
       const payload: any = {
         description: newTask.description,
         due_date: newTask.due_date ? new Date(newTask.due_date).toISOString() : '',
-        user_resp: newTask.user_resp || user?.id,
+        user_resp: responsavelFinal,
         tp_tarefa: newTask.tp_tarefa,
       }
+
       if (newTask.lead_id) payload.lead_id = newTask.lead_id
       if (newTask.client_id) payload.client_id = newTask.client_id
 
       if (newTask.id) {
         await updateTask(newTask.id, payload)
-        toast.success('Tarefa atualizada')
+        toast.success('Tarefa atualizada', {
+          style: { background: '#10b981', color: 'white', border: 'none' },
+        })
       } else {
         payload.completed = false
+        // O user_id é o "criador" da tarefa.
         payload.user_id = user?.id
         await createTask(payload)
-        toast.success('Tarefa criada')
+        toast.success('Tarefa criada com sucesso', {
+          style: { background: '#10b981', color: 'white', border: 'none' },
+        })
       }
       setIsCreateOpen(false)
       setNewTask({
@@ -190,8 +217,11 @@ export default function Tasks() {
       newParams.delete('client')
       setSearchParams(newParams)
       loadData()
-    } catch {
-      toast.error('Erro ao salvar tarefa')
+    } catch (e) {
+      console.error(e)
+      toast.error('Erro ao salvar tarefa. Verifique as permissões.', {
+        style: { background: '#ef4444', color: 'white', border: 'none' },
+      })
     }
   }
 
@@ -211,19 +241,18 @@ export default function Tasks() {
   if (loading) {
     return (
       <div className="flex h-full items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-zinc-300" />
+        <Loader2 className="h-6 w-6 animate-spin text-[#052136]" />
       </div>
     )
   }
 
   const filteredTasks = tasks.filter((t) => {
-    // Mentores veem apenas as próprias tarefas. Vendedor, Gestor e Suporte veem TODAS.
-    if (user?.perfil_acess === 'Mentor(a)') {
+    // Mentores e Vendedores veem apenas as próprias tarefas. Gestor e Suporte veem TODAS.
+    if (user?.perfil_acess === 'Mentor(a)' || user?.perfil_acess === 'Vendedor') {
       const responsavelId = t.user_resp || t.user_id
       if (responsavelId !== user?.id) return false
     }
 
-    // Aplica o filtro de Tipo de Tarefa...
     if (filterType !== 'all' && t.tp_tarefa !== filterType) return false
 
     if (filter === 'late' && (t.completed || !t.due_date || !isPast(parseISO(t.due_date))))
@@ -328,7 +357,7 @@ export default function Tasks() {
                   e.stopPropagation()
                   handleEditTask(t)
                 }}
-                className="p-1.5 text-zinc-300 hover:text-violet-500 hover:bg-violet-50 rounded-md transition-colors"
+                className="p-1.5 text-zinc-300 hover:text-[#052136] hover:bg-zinc-100 rounded-md transition-colors"
                 title="Editar"
               >
                 <Pencil className="h-4 w-4" />
@@ -625,6 +654,7 @@ export default function Tasks() {
                     <SelectValue placeholder="Selecione um lead (opcional)" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="none">Nenhum</SelectItem>
                     {leads.map((l) => (
                       <SelectItem key={l.id} value={l.id}>
                         {l.name || 'Sem nome'}
@@ -646,6 +676,7 @@ export default function Tasks() {
                     <SelectValue placeholder="Selecione um cliente (opcional)" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="none">Nenhum</SelectItem>
                     {clientes.map((c) => (
                       <SelectItem key={c.id} value={c.id}>
                         {c.Aluno_a || 'Sem nome'}
