@@ -210,7 +210,7 @@ export default function Clientes() {
       })
       setIsModalOpen(false)
     } catch (e) {
-      toast.error('Erro ao atualizar cliente'{
+      toast.error('Erro ao atualizar cliente', {
         style: { background: '#ef4444', color: 'white', border: 'none' },
       })
     }
@@ -227,10 +227,9 @@ export default function Clientes() {
       await deleteBdCliente(clienteToDelete)
       toast.success('Cliente excluído com sucesso', {
         style: { background: '#3dcd1dff', color: 'white', border: 'none' },
-      }
-)
+      })
     } catch (e) {
-      toast.error('Erro ao excluir cliente'{
+      toast.error('Erro ao excluir cliente', {
         style: { background: '#ef4444', color: 'white', border: 'none' },
       })
     } finally {
