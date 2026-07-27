@@ -190,20 +190,28 @@ export default function Leads() {
       editingLead.etapa_pipeline === '10. Lead Desqualificado/Perda' &&
       !editingLead.motivo_perda
     ) {
-      toast.error('O motivo da perda é obrigatório ao desqualificar o lead.')
+      toast.error('O motivo da perda é obrigatório ao desqualificar o lead.', {
+        style: { background: '#ef4444', color: 'white', border: 'none' },
+      })
       return
     }
     try {
       if (editingLead.id) {
         await updateLead(editingLead.id, editingLead)
-        toast.success('Lead atualizado')
+        toast.success('Lead atualizado', {
+          style: { background: '#3dcd1dff', color: 'white', border: 'none' },
+        })
       } else {
         await createLead(editingLead)
-        toast.success('Lead criado')
+        toast.success('Lead criado', {
+          style: { background: '#3dcd1dff', color: 'white', border: 'none' },
+        })
       }
       setIsModalOpen(false)
     } catch (e) {
-      toast.error('Erro ao salvar')
+      toast.error('Erro ao salvar', {
+        style: { background: '#ef4444', color: 'white', border: 'none' },
+      })
     }
   }
 
@@ -216,9 +224,13 @@ export default function Leads() {
     if (!leadToDelete) return
     try {
       await deleteLead(leadToDelete)
-      toast.success('Lead excluído')
+      toast.success('Lead excluído', {
+        style: { background: '#3dcd1dff', color: 'white', border: 'none' },
+      })
     } catch (e) {
-      toast.error('Erro ao excluir')
+      toast.error('Erro ao excluir', {
+        style: { background: '#ef4444', color: 'white', border: 'none' },
+      })
     } finally {
       setDeleteDialogOpen(false)
       setLeadToDelete(null)

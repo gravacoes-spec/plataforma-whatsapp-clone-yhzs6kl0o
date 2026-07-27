@@ -179,7 +179,9 @@ export default function Clientes() {
         renewal_info: editingCliente.Renov,
         mentor_id: editingCliente.Mentor_a,
       })
-      toast.success('Período salvo no histórico')
+      toast.success('Período salvo no histórico', {
+        style: { background: '#3dcd1dff', color: 'white', border: 'none' },
+      })
       getMentoriaPeriodos(editingCliente.id).then(setMentoriaHistory)
       setEditingCliente({
         ...editingCliente,
@@ -188,7 +190,9 @@ export default function Clientes() {
         Renov: '',
       })
     } catch {
-      toast.error('Erro ao salvar histórico')
+      toast.error('Erro ao salvar histórico', {
+        style: { background: '#ef4444', color: 'white', border: 'none' },
+      })
     }
   }
 
@@ -201,10 +205,14 @@ export default function Clientes() {
     if (!editingCliente?.id) return
     try {
       await updateBdCliente(editingCliente.id, editingCliente)
-      toast.success('Cliente atualizado com sucesso')
+      toast.success('Cliente atualizado com sucesso', {
+        style: { background: '#3dcd1dff', color: 'white', border: 'none' },
+      })
       setIsModalOpen(false)
     } catch (e) {
-      toast.error('Erro ao atualizar cliente')
+      toast.error('Erro ao atualizar cliente'{
+        style: { background: '#ef4444', color: 'white', border: 'none' },
+      })
     }
   }
 
@@ -217,9 +225,14 @@ export default function Clientes() {
     if (!clienteToDelete) return
     try {
       await deleteBdCliente(clienteToDelete)
-      toast.success('Cliente excluído com sucesso')
+      toast.success('Cliente excluído com sucesso', {
+        style: { background: '#3dcd1dff', color: 'white', border: 'none' },
+      }
+)
     } catch (e) {
-      toast.error('Erro ao excluir cliente')
+      toast.error('Erro ao excluir cliente'{
+        style: { background: '#ef4444', color: 'white', border: 'none' },
+      })
     } finally {
       setDeleteDialogOpen(false)
       setClienteToDelete(null)
