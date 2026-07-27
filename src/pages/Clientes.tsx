@@ -17,18 +17,7 @@ import {
 } from '@/services/mentoria_periodos'
 import { useRealtime } from '@/hooks/use-realtime'
 import { useAuth } from '@/hooks/use-auth'
-import {
-  Search,
-  Loader2,
-  Pencil,
-  Trash2,
-  GraduationCap,
-  DollarSign,
-  Calendar as CalendarIcon,
-  Bot,
-  ShoppingBag,
-  Download,
-} from 'lucide-react'
+import { Search, Loader2, Pencil, Trash2, ShoppingBag, Download } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { PageHeader } from '@/components/ui/page-header'
@@ -57,7 +46,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { toast } from 'sonner'
-import { format, parseISO } from 'date-fns'
+import { format, parseISO, isPast, isToday } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import {
   AlertDialog,
@@ -82,6 +71,7 @@ export default function Clientes() {
   const [search, setSearch] = useState('')
   const [filterProduto, setFilterProduto] = useState('all')
   const [filterMentor, setFilterMentor] = useState('all')
+  const [filterStatus, setFilterStatus] = useState('all') // Novo estado para o filtro de status
 
   const [loading, setLoading] = useState(true)
 
@@ -132,7 +122,6 @@ export default function Clientes() {
 
   useRealtime('bd_clientes', () => loadData())
 
-  // Extrair produtos únicos para popular o filtro
   const uniqueProducts = useMemo(() => {
     const products = clientes.map((c) => c.Nome_Prod).filter(Boolean) as string[]
     return Array.from(new Set(products))
@@ -141,17 +130,37 @@ export default function Clientes() {
   useEffect(() => {
     setFilteredClientes(
       clientes.filter((c) => {
+        // Busca textual
         const matchSearch =
           (c.Aluno_a || '').toLowerCase().includes(search.toLowerCase()) ||
           (c.email || '').toLowerCase().includes(search.toLowerCase()) ||
           (c.Telefone || '').includes(search)
+
+        // Filtros de seleção simples
         const matchProduto = filterProduto === 'all' || c.Nome_Prod === filterProduto
         const matchMentor = filterMentor === 'all' || c.Mentor_a === filterMentor
 
-        return matchSearch && matchProduto && matchMentor
+        // Filtro calculado dinamicamente de Status da Mentoria
+        let matchStatus = true
+        if (filterStatus !== 'all') {
+          let currentStatus = 'nao_iniciada'
+
+          if (c.Data_inicio && !c.Data_term) {
+            currentStatus = 'ativa'
+          } else if (c.Data_term) {
+            currentStatus =
+              isPast(parseISO(c.Data_term)) && !isToday(parseISO(c.Data_term))
+                ? 'expirada'
+                : 'ativa'
+          }
+
+          matchStatus = currentStatus === filterStatus
+        }
+
+        return matchSearch && matchProduto && matchMentor && matchStatus
       }),
     )
-  }, [search, filterProduto, filterMentor, clientes])
+  }, [search, filterProduto, filterMentor, filterStatus, clientes])
 
   useEffect(() => {
     if (editingCliente?.Vend_Resp_Lead || editingCliente?.email) {
@@ -248,11 +257,20 @@ export default function Clientes() {
       'Produto',
       'Valor Pago',
       'Mentor',
+      'Status Mentoria',
     ]
     const csvContent = [
       headers.join(','),
       ...filteredClientes.map((c) => {
         const mentorName = users.find((u) => u.id === c.Mentor_a)?.name || 'Sem Mentor'
+
+        let statusCsv = 'Não Iniciada'
+        if (c.Data_inicio && !c.Data_term) statusCsv = 'Ativa'
+        else if (c.Data_term) {
+          statusCsv =
+            isPast(parseISO(c.Data_term)) && !isToday(parseISO(c.Data_term)) ? 'Expirada' : 'Ativa'
+        }
+
         return [
           `"${(c.Aluno_a || '').replace(/"/g, '""')}"`,
           `"${(c.email || '').replace(/"/g, '""')}"`,
@@ -262,6 +280,7 @@ export default function Clientes() {
           `"${(c.Nome_Prod || '').replace(/"/g, '""')}"`,
           `"${c.Vlr_Pago || 0}"`,
           `"${mentorName.replace(/"/g, '""')}"`,
+          `"${statusCsv}"`,
         ].join(',')
       }),
     ].join('\n')
@@ -271,6 +290,36 @@ export default function Clientes() {
     link.href = URL.createObjectURL(blob)
     link.download = `clientes_pf_${format(new Date(), 'yyyyMMdd_HHmm')}.csv`
     link.click()
+  }
+
+  const renderStatusBadge = (dataInicio?: string, dataTerm?: string) => {
+    if (!dataInicio && !dataTerm) return null
+
+    if (dataInicio && !dataTerm) {
+      return (
+        <span className="mt-1 inline-flex items-center rounded-md bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700 ring-1 ring-inset ring-emerald-600/20">
+          🟢 Ativa
+        </span>
+      )
+    }
+
+    if (dataTerm) {
+      const isExpired = isPast(parseISO(dataTerm)) && !isToday(parseISO(dataTerm))
+      if (isExpired) {
+        return (
+          <span className="mt-1 inline-flex items-center rounded-md bg-red-50 px-2 py-0.5 text-[10px] font-bold text-red-700 ring-1 ring-inset ring-red-600/20">
+            🔴 Expirada
+          </span>
+        )
+      } else {
+        return (
+          <span className="mt-1 inline-flex items-center rounded-md bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700 ring-1 ring-inset ring-emerald-600/20">
+            🟢 Ativa
+          </span>
+        )
+      }
+    }
+    return null
   }
 
   if (loading) {
@@ -289,11 +338,11 @@ export default function Clientes() {
       />
       <div className="px-8 pb-8 flex-1 flex flex-col">
         <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between mb-6 gap-4">
-          <div className="flex flex-col sm:flex-row w-full xl:w-auto items-start sm:items-center gap-3">
-            <div className="relative w-full sm:w-72">
+          <div className="flex flex-col sm:flex-row flex-wrap w-full xl:w-auto items-start sm:items-center gap-3">
+            <div className="relative w-full sm:w-64">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
               <Input
-                placeholder="Buscar por aluno, email ou telefone..."
+                placeholder="Buscar por aluno, email..."
                 className="pl-9 bg-white shadow-sm"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
@@ -301,7 +350,7 @@ export default function Clientes() {
             </div>
 
             <Select value={filterProduto} onValueChange={setFilterProduto}>
-              <SelectTrigger className="w-full sm:w-[200px] bg-white shadow-sm border-zinc-200">
+              <SelectTrigger className="w-full sm:w-[180px] bg-white shadow-sm border-zinc-200">
                 <SelectValue placeholder="Produto" />
               </SelectTrigger>
               <SelectContent>
@@ -315,7 +364,7 @@ export default function Clientes() {
             </Select>
 
             <Select value={filterMentor} onValueChange={setFilterMentor}>
-              <SelectTrigger className="w-full sm:w-[200px] bg-white shadow-sm border-zinc-200">
+              <SelectTrigger className="w-full sm:w-[180px] bg-white shadow-sm border-zinc-200">
                 <SelectValue placeholder="Mentor(a)" />
               </SelectTrigger>
               <SelectContent>
@@ -328,13 +377,30 @@ export default function Clientes() {
               </SelectContent>
             </Select>
 
-            {(filterProduto !== 'all' || filterMentor !== 'all' || search !== '') && (
+            {/* Novo Filtro de Status */}
+            <Select value={filterStatus} onValueChange={setFilterStatus}>
+              <SelectTrigger className="w-full sm:w-[180px] bg-white shadow-sm border-zinc-200">
+                <SelectValue placeholder="Status da Mentoria" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os Status</SelectItem>
+                <SelectItem value="ativa">🟢 Ativa</SelectItem>
+                <SelectItem value="expirada">🔴 Expirada</SelectItem>
+                <SelectItem value="nao_iniciada">⚪ Não Iniciada</SelectItem>
+              </SelectContent>
+            </Select>
+
+            {(filterProduto !== 'all' ||
+              filterMentor !== 'all' ||
+              filterStatus !== 'all' ||
+              search !== '') && (
               <Button
                 variant="ghost"
                 className="text-zinc-500 hover:text-zinc-900 px-2"
                 onClick={() => {
                   setFilterProduto('all')
                   setFilterMentor('all')
+                  setFilterStatus('all')
                   setSearch('')
                 }}
               >
@@ -384,9 +450,12 @@ export default function Clientes() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <span className="inline-flex items-center rounded-md bg-emerald-50 px-2 py-1 text-[11px] font-medium text-emerald-700 ring-1 ring-inset ring-emerald-600/20">
-                      {users.find((u) => u.id === c.Mentor_a)?.name || 'Sem Mentor(a)'}
-                    </span>
+                    <div className="flex flex-col items-start">
+                      <span className="inline-flex items-center rounded-md bg-emerald-50 px-2 py-1 text-[11px] font-medium text-emerald-700 ring-1 ring-inset ring-emerald-600/20">
+                        {users.find((u) => u.id === c.Mentor_a)?.name || 'Sem Mentor(a)'}
+                      </span>
+                      {c.Mentor_a && renderStatusBadge(c.Data_inicio, c.Data_term)}
+                    </div>
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center justify-end gap-2">
@@ -639,7 +708,10 @@ export default function Clientes() {
 
                 <TabsContent value="mentoria" className="space-y-6 mt-0">
                   <div className="space-y-4 border border-zinc-200 bg-zinc-50/50 p-4 rounded-xl">
-                    <h3 className="font-semibold text-[#052136] text-sm">Período Ativo</h3>
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-semibold text-[#052136] text-sm">Período Ativo</h3>
+                      {renderStatusBadge(editingCliente.Data_inicio, editingCliente.Data_term)}
+                    </div>
                     <div className="space-y-2">
                       <Label>Mentor(a) Atribuído(a)</Label>
                       <Select
