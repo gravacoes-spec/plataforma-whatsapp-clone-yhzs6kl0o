@@ -162,10 +162,34 @@ export default function Index() {
   }, [leads, tasks, vendas, metas, period, sellerId, customStart, customEnd])
 
   const kpis = useMemo(() => {
-    const validVendas = filteredVendas.filter((v) => {
-      const status = (v.status_compra || '').toUpperCase().trim()
-      // Adicionado variações mais amplas de status de pagamento
-      return [
+    // 1. Agrupar as vendas por transação (ou por ID se não tiver transação, como nas importadas via CSV)
+    const vendasAgrupadas = new Map<string, any[]>()
+
+    filteredVendas.forEach((v) => {
+      // Se não tiver transação, usamos o próprio ID para não agrupar com nada e manter a venda individual
+      const key = v.transacao || v.id
+      if (!vendasAgrupadas.has(key)) {
+        vendasAgrupadas.set(key, [])
+      }
+      vendasAgrupadas.get(key)!.push(v)
+    })
+
+    const validVendas: any[] = []
+
+    // 2. Para cada transação, achar o evento mais recente e checar se ele é um status de aprovação
+    vendasAgrupadas.forEach((eventos) => {
+      // Ordena do mais recente (maior data) para o mais antigo
+      eventos.sort((a, b) => {
+        const dateA = parseCustomDate(a.data_pedido, a.created).getTime()
+        const dateB = parseCustomDate(b.data_pedido, b.created).getTime()
+        return dateB - dateA
+      })
+
+      // O primeiro elemento do array ordenado é o evento mais recente daquela transação
+      const eventoMaisRecente = eventos[0]
+      const status = (eventoMaisRecente.status_compra || '').toUpperCase().trim()
+
+      const statusAprovado = [
         'APPROVED',
         'COMPLETE',
         'COMPLETED',
@@ -177,6 +201,22 @@ export default function Index() {
         'PAID',
         'PAYMENT_CONFIRMED',
       ].includes(status)
+
+      // Status que invalidam a transação (cancelamento, chargeback, reembolso)
+      const statusCancelado = [
+        'CANCELED',
+        'CANCELLED',
+        'CANCELADA',
+        'REFUNDED',
+        'REEMBOLSADA',
+        'CHARGEBACK',
+        'PURCHASE_CANCELED', // caso o webhook mande o tipo de evento misturado no status
+      ].includes(status)
+
+      // Se o status mais recente for aprovado e NÃO for cancelado, a venda é válida!
+      if (statusAprovado && !statusCancelado) {
+        validVendas.push(eventoMaisRecente)
+      }
     })
 
     const fatTotal = validVendas.reduce((acc, v) => acc + (v.preco_total || 0), 0)
