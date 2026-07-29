@@ -60,13 +60,14 @@ export default function HotmartLogs() {
       const text = await file.text()
       const result = await importHotmartCsv(text)
       toast.success(
-        `${result.imported} registros importados, ${result.clientesSynced} clientes sincronizados!`, {
-        style: { background: '#3dcd1dff', color: 'white', border: 'none' },
-      }
+        `${result.imported} registros importados, ${result.clientesSynced} clientes sincronizados!`,
+        {
+          style: { background: '#3dcd1dff', color: 'white', border: 'none' },
+        },
       )
       loadLogs()
     } catch (err) {
-      toast.error('Erro ao importar CSV' {
+      toast.error('Erro ao importar CSV', {
         style: { background: '#ef4444', color: 'white', border: 'none' },
       })
       console.error(err)
