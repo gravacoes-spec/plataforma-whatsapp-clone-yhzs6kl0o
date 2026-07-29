@@ -160,8 +160,6 @@ export default function Clientes() {
   }, [search, filterProduto, filterMentor, filterStatus, clientes])
 
   useEffect(() => {
-    // Se o cliente existe (edição), busca as vendas no Hotmart.
-    // Se não tem ID (é novo cadastro), zera.
     if (editingCliente?.id && (editingCliente?.Vend_Resp_Lead || editingCliente?.email)) {
       getVendasByLeadAndEmail(editingCliente.Vend_Resp_Lead || '', editingCliente.email || '')
         .then(setLeadVendas)
@@ -209,7 +207,6 @@ export default function Clientes() {
     setIsModalOpen(true)
   }
 
-  // Função criada especificamente para abrir o Modal em modo de Criação
   const handleOpenCreateModal = () => {
     setEditingCliente({
       Aluno_a: '',
@@ -457,6 +454,12 @@ export default function Clientes() {
           </div>
         </div>
 
+        {/* CONTADOR DE CLIENTES ADICIONADO AQUI */}
+        <div className="mb-3 text-sm text-zinc-500 font-medium">
+          Total encontrado:{' '}
+          <span className="font-bold text-[#052136]">{filteredClientes.length}</span> cliente(s)
+        </div>
+
         <div className="bg-white rounded-xl border border-zinc-200/60 overflow-hidden shadow-sm flex-1">
           <Table>
             <TableHeader>
@@ -651,7 +654,6 @@ export default function Clientes() {
                     </h3>
                   </div>
 
-                  {/* SE FOR EDIÇÃO, MOSTRA O HISTÓRICO DO HOTMART */}
                   {editingCliente.id ? (
                     leadVendas.length > 0 ? (
                       <div className="rounded-xl border border-zinc-200/60 bg-white overflow-hidden shadow-sm">
@@ -698,7 +700,6 @@ export default function Clientes() {
                       </div>
                     )
                   ) : (
-                    /* SE FOR CRIAÇÃO NOVA, MOSTRA FORMULÁRIO MANUAL */
                     <div className="space-y-4 border border-zinc-200 bg-zinc-50/50 p-4 rounded-xl">
                       <div className="space-y-2">
                         <Label>Nome do Produto</Label>
