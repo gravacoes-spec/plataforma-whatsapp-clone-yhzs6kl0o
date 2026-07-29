@@ -17,7 +17,7 @@ import {
 } from '@/services/mentoria_periodos'
 import { useRealtime } from '@/hooks/use-realtime'
 import { useAuth } from '@/hooks/use-auth'
-import { Search, Loader2, Pencil, Trash2, ShoppingBag, Download } from 'lucide-react'
+import { Search, Loader2, Pencil, Trash2, ShoppingBag, Download, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { PageHeader } from '@/components/ui/page-header'
@@ -71,7 +71,7 @@ export default function Clientes() {
   const [search, setSearch] = useState('')
   const [filterProduto, setFilterProduto] = useState('all')
   const [filterMentor, setFilterMentor] = useState('all')
-  const [filterStatus, setFilterStatus] = useState('all') // Novo estado para o filtro de status
+  const [filterStatus, setFilterStatus] = useState('all')
 
   const [loading, setLoading] = useState(true)
 
@@ -130,17 +130,14 @@ export default function Clientes() {
   useEffect(() => {
     setFilteredClientes(
       clientes.filter((c) => {
-        // Busca textual
         const matchSearch =
           (c.Aluno_a || '').toLowerCase().includes(search.toLowerCase()) ||
           (c.email || '').toLowerCase().includes(search.toLowerCase()) ||
           (c.Telefone || '').includes(search)
 
-        // Filtros de seleção simples
         const matchProduto = filterProduto === 'all' || c.Nome_Prod === filterProduto
         const matchMentor = filterMentor === 'all' || c.Mentor_a === filterMentor
 
-        // Filtro calculado dinamicamente de Status da Mentoria
         let matchStatus = true
         if (filterStatus !== 'all') {
           let currentStatus = 'nao_iniciada'
@@ -163,7 +160,9 @@ export default function Clientes() {
   }, [search, filterProduto, filterMentor, filterStatus, clientes])
 
   useEffect(() => {
-    if (editingCliente?.Vend_Resp_Lead || editingCliente?.email) {
+    // Se o cliente existe (edição), busca as vendas no Hotmart.
+    // Se não tem ID (é novo cadastro), zera.
+    if (editingCliente?.id && (editingCliente?.Vend_Resp_Lead || editingCliente?.email)) {
       getVendasByLeadAndEmail(editingCliente.Vend_Resp_Lead || '', editingCliente.email || '')
         .then(setLeadVendas)
         .catch(() => setLeadVendas([]))
@@ -210,16 +209,48 @@ export default function Clientes() {
     setIsModalOpen(true)
   }
 
+  // Função criada especificamente para abrir o Modal em modo de Criação
+  const handleOpenCreateModal = () => {
+    setEditingCliente({
+      Aluno_a: '',
+      email: '',
+      Telefone: '',
+      Cidade: '',
+      UF: '',
+      Vend_Resp_User: '',
+      Nome_Prod: '',
+      Vlr_Pago: 0,
+      Tp_Pgto: '',
+      Mentor_a: '',
+      Data_inicio: '',
+      Data_term: '',
+      Renov: '',
+      area_grad: '',
+      concurso_alvo: '',
+      tmp_estudos: '',
+      hrs_est_dia: '',
+      maior_dif: '',
+      top_obj: '',
+    })
+    setIsModalOpen(true)
+  }
+
   const handleSave = async () => {
-    if (!editingCliente?.id) return
     try {
-      await updateBdCliente(editingCliente.id, editingCliente)
-      toast.success('Cliente atualizado com sucesso', {
-        style: { background: '#3dcd1dff', color: 'white', border: 'none' },
-      })
+      if (editingCliente?.id) {
+        await updateBdCliente(editingCliente.id, editingCliente)
+        toast.success('Cliente atualizado com sucesso', {
+          style: { background: '#3dcd1dff', color: 'white', border: 'none' },
+        })
+      } else {
+        await createBdCliente(editingCliente as any)
+        toast.success('Novo cliente criado com sucesso', {
+          style: { background: '#3dcd1dff', color: 'white', border: 'none' },
+        })
+      }
       setIsModalOpen(false)
     } catch (e) {
-      toast.error('Erro ao atualizar cliente', {
+      toast.error('Erro ao salvar cliente', {
         style: { background: '#ef4444', color: 'white', border: 'none' },
       })
     }
@@ -377,7 +408,6 @@ export default function Clientes() {
               </SelectContent>
             </Select>
 
-            {/* Novo Filtro de Status */}
             <Select value={filterStatus} onValueChange={setFilterStatus}>
               <SelectTrigger className="w-full sm:w-[180px] bg-white shadow-sm border-zinc-200">
                 <SelectValue placeholder="Status da Mentoria" />
@@ -409,13 +439,22 @@ export default function Clientes() {
             )}
           </div>
 
-          <Button
-            onClick={exportToCsv}
-            variant="outline"
-            className="text-emerald-700 border-emerald-200 hover:bg-emerald-50 w-full sm:w-auto"
-          >
-            <Download className="h-4 w-4 mr-2" /> Exportar CSV
-          </Button>
+          <div className="flex items-center gap-3 w-full sm:w-auto">
+            <Button
+              onClick={exportToCsv}
+              variant="outline"
+              className="text-emerald-700 border-emerald-200 hover:bg-emerald-50 flex-1 sm:flex-initial"
+            >
+              <Download className="h-4 w-4 mr-2" /> Exportar CSV
+            </Button>
+
+            <Button
+              onClick={handleOpenCreateModal}
+              className="bg-[#052136] hover:bg-[#08304c] text-white flex-1 sm:flex-initial shadow-sm"
+            >
+              <Plus className="h-4 w-4 mr-2" /> Novo Cliente
+            </Button>
+          </div>
         </div>
 
         <div className="bg-white rounded-xl border border-zinc-200/60 overflow-hidden shadow-sm flex-1">
@@ -494,7 +533,9 @@ export default function Clientes() {
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
         <DialogContent className="sm:max-w-[700px] p-0 overflow-hidden">
           <DialogHeader className="p-6 pb-4 border-b">
-            <DialogTitle>Gerenciar Cliente</DialogTitle>
+            <DialogTitle>
+              {editingCliente?.id ? 'Gerenciar Cliente' : 'Novo Cliente Manual'}
+            </DialogTitle>
           </DialogHeader>
           {editingCliente && (
             <Tabs defaultValue="basico" className="w-full">
@@ -603,46 +644,98 @@ export default function Clientes() {
                 <TabsContent value="compras" className="space-y-4 mt-0">
                   <div className="flex items-center gap-2 text-zinc-900 mb-2">
                     <ShoppingBag className="h-5 w-5 text-[#052136]" />
-                    <h3 className="font-semibold">Histórico de Compras (Hotmart)</h3>
+                    <h3 className="font-semibold">
+                      {editingCliente.id
+                        ? 'Histórico de Compras (Hotmart)'
+                        : 'Dados da Compra Manual'}
+                    </h3>
                   </div>
-                  {leadVendas.length > 0 ? (
-                    <div className="rounded-xl border border-zinc-200/60 bg-white overflow-hidden shadow-sm">
-                      <Table>
-                        <TableHeader className="bg-zinc-50/50">
-                          <TableRow>
-                            <TableHead>Produto</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead>Data</TableHead>
-                            <TableHead className="text-right">Valor</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {leadVendas.map((v) => (
-                            <TableRow key={v.id}>
-                              <TableCell className="font-medium text-zinc-800">
-                                {v.nome_produto || '-'}
-                              </TableCell>
-                              <TableCell>
-                                <span className="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-[11px] font-medium text-blue-700 ring-1 ring-inset ring-blue-600/20">
-                                  {v.status_compra || '-'}
-                                </span>
-                              </TableCell>
-                              <TableCell className="text-zinc-500">
-                                {v.data_pedido
-                                  ? format(parseISO(v.data_pedido), 'dd/MM/yyyy', { locale: ptBR })
-                                  : '-'}
-                              </TableCell>
-                              <TableCell className="text-right font-medium text-zinc-900">
-                                {v.moeda} {v.preco_total?.toFixed(2)}
-                              </TableCell>
+
+                  {/* SE FOR EDIÇÃO, MOSTRA O HISTÓRICO DO HOTMART */}
+                  {editingCliente.id ? (
+                    leadVendas.length > 0 ? (
+                      <div className="rounded-xl border border-zinc-200/60 bg-white overflow-hidden shadow-sm">
+                        <Table>
+                          <TableHeader className="bg-zinc-50/50">
+                            <TableRow>
+                              <TableHead>Produto</TableHead>
+                              <TableHead>Status</TableHead>
+                              <TableHead>Data</TableHead>
+                              <TableHead className="text-right">Valor</TableHead>
                             </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </div>
+                          </TableHeader>
+                          <TableBody>
+                            {leadVendas.map((v) => (
+                              <TableRow key={v.id}>
+                                <TableCell className="font-medium text-zinc-800">
+                                  {v.nome_produto || '-'}
+                                </TableCell>
+                                <TableCell>
+                                  <span className="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-[11px] font-medium text-blue-700 ring-1 ring-inset ring-blue-600/20">
+                                    {v.status_compra || '-'}
+                                  </span>
+                                </TableCell>
+                                <TableCell className="text-zinc-500">
+                                  {v.data_pedido
+                                    ? format(parseISO(v.data_pedido), 'dd/MM/yyyy', {
+                                        locale: ptBR,
+                                      })
+                                    : '-'}
+                                </TableCell>
+                                <TableCell className="text-right font-medium text-zinc-900">
+                                  {v.moeda} {v.preco_total?.toFixed(2)}
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    ) : (
+                      <div className="rounded-xl border border-dashed border-zinc-200 bg-zinc-50/50 p-8 text-center">
+                        <p className="text-sm font-medium text-zinc-600">
+                          Nenhuma compra encontrada
+                        </p>
+                      </div>
+                    )
                   ) : (
-                    <div className="rounded-xl border border-dashed border-zinc-200 bg-zinc-50/50 p-8 text-center">
-                      <p className="text-sm font-medium text-zinc-600">Nenhuma compra encontrada</p>
+                    /* SE FOR CRIAÇÃO NOVA, MOSTRA FORMULÁRIO MANUAL */
+                    <div className="space-y-4 border border-zinc-200 bg-zinc-50/50 p-4 rounded-xl">
+                      <div className="space-y-2">
+                        <Label>Nome do Produto</Label>
+                        <Input
+                          value={editingCliente.Nome_Prod || ''}
+                          onChange={(e) =>
+                            setEditingCliente({ ...editingCliente, Nome_Prod: e.target.value })
+                          }
+                          placeholder="Ex: Mentoria Premium..."
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label>Valor Pago (R$)</Label>
+                          <Input
+                            type="number"
+                            value={editingCliente.Vlr_Pago || ''}
+                            onChange={(e) =>
+                              setEditingCliente({
+                                ...editingCliente,
+                                Vlr_Pago: Number(e.target.value),
+                              })
+                            }
+                            placeholder="0.00"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Tipo de Pagamento</Label>
+                          <Input
+                            value={editingCliente.Tp_Pgto || ''}
+                            onChange={(e) =>
+                              setEditingCliente({ ...editingCliente, Tp_Pgto: e.target.value })
+                            }
+                            placeholder="Ex: Cartão, Pix..."
+                          />
+                        </div>
+                      </div>
                     </div>
                   )}
                 </TabsContent>
@@ -786,50 +879,57 @@ export default function Clientes() {
                     <Button
                       onClick={saveToHistory}
                       variant="outline"
+                      disabled={!editingCliente.id}
                       className="w-full text-[#052136] hover:text-[#052136] border-[#052136]/20 hover:bg-[#052136]/5"
                     >
-                      Arquivar no Histórico
+                      {editingCliente.id ? 'Arquivar no Histórico' : 'Salve o cliente primeiro'}
                     </Button>
                   </div>
 
-                  <div className="space-y-2">
-                    <h3 className="font-semibold text-zinc-800 text-sm">Histórico de Mentorias</h3>
-                    <div className="border border-zinc-200 rounded-lg overflow-hidden">
-                      <Table>
-                        <TableHeader className="bg-zinc-50">
-                          <TableRow>
-                            <TableHead>Mentor</TableHead>
-                            <TableHead>Início</TableHead>
-                            <TableHead>Fim</TableHead>
-                            <TableHead>Renovação</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {mentoriaHistory.map((h) => (
-                            <TableRow key={h.id}>
-                              <TableCell>
-                                {users.find((u) => u.id === h.mentor_id)?.name || '-'}
-                              </TableCell>
-                              <TableCell>
-                                {h.start_date ? format(parseISO(h.start_date), 'dd/MM/yyyy') : '-'}
-                              </TableCell>
-                              <TableCell>
-                                {h.end_date ? format(parseISO(h.end_date), 'dd/MM/yyyy') : '-'}
-                              </TableCell>
-                              <TableCell>{h.renewal_info || '-'}</TableCell>
-                            </TableRow>
-                          ))}
-                          {mentoriaHistory.length === 0 && (
+                  {editingCliente.id && (
+                    <div className="space-y-2">
+                      <h3 className="font-semibold text-zinc-800 text-sm">
+                        Histórico de Mentorias
+                      </h3>
+                      <div className="border border-zinc-200 rounded-lg overflow-hidden">
+                        <Table>
+                          <TableHeader className="bg-zinc-50">
                             <TableRow>
-                              <TableCell colSpan={4} className="text-center text-zinc-500 py-4">
-                                Nenhum histórico
-                              </TableCell>
+                              <TableHead>Mentor</TableHead>
+                              <TableHead>Início</TableHead>
+                              <TableHead>Fim</TableHead>
+                              <TableHead>Renovação</TableHead>
                             </TableRow>
-                          )}
-                        </TableBody>
-                      </Table>
+                          </TableHeader>
+                          <TableBody>
+                            {mentoriaHistory.map((h) => (
+                              <TableRow key={h.id}>
+                                <TableCell>
+                                  {users.find((u) => u.id === h.mentor_id)?.name || '-'}
+                                </TableCell>
+                                <TableCell>
+                                  {h.start_date
+                                    ? format(parseISO(h.start_date), 'dd/MM/yyyy')
+                                    : '-'}
+                                </TableCell>
+                                <TableCell>
+                                  {h.end_date ? format(parseISO(h.end_date), 'dd/MM/yyyy') : '-'}
+                                </TableCell>
+                                <TableCell>{h.renewal_info || '-'}</TableCell>
+                              </TableRow>
+                            ))}
+                            {mentoriaHistory.length === 0 && (
+                              <TableRow>
+                                <TableCell colSpan={4} className="text-center text-zinc-500 py-4">
+                                  Nenhum histórico
+                                </TableCell>
+                              </TableRow>
+                            )}
+                          </TableBody>
+                        </Table>
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </TabsContent>
               </div>
             </Tabs>
@@ -843,7 +943,7 @@ export default function Clientes() {
               Cancelar
             </Button>
             <Button onClick={handleSave} className="bg-[#052136] hover:bg-[#08304c] text-white">
-              Salvar Alterações
+              {editingCliente?.id ? 'Salvar Alterações' : 'Criar Cliente'}
             </Button>
           </DialogFooter>
         </DialogContent>
