@@ -572,13 +572,16 @@ export default function Leads() {
                   <div className="space-y-2">
                     <Label>Vendedor Responsável</Label>
                     <Select
-                      value={editingLead.vend_resp || ''}
-                      onValueChange={(v) => setEditingLead({ ...editingLead, vend_resp: v })}
+                      value={editingLead.vend_resp || 'none'}
+                      onValueChange={(v) =>
+                        setEditingLead({ ...editingLead, vend_resp: v === 'none' ? '' : v })
+                      }
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Selecione..." />
                       </SelectTrigger>
                       <SelectContent>
+                        <SelectItem value="none">Nenhum</SelectItem>
                         {users.map((u) => (
                           <SelectItem key={u.id} value={u.id}>
                             {u.name}

@@ -625,15 +625,19 @@ export default function Clientes() {
                   <div className="space-y-2">
                     <Label>Vendedor Responsável</Label>
                     <Select
-                      value={editingCliente.Vend_Resp_User || ''}
+                      value={editingCliente.Vend_Resp_User || 'none'}
                       onValueChange={(v) =>
-                        setEditingCliente({ ...editingCliente, Vend_Resp_User: v })
+                        setEditingCliente({
+                          ...editingCliente,
+                          Vend_Resp_User: v === 'none' ? '' : v,
+                        })
                       }
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Selecione um vendedor" />
                       </SelectTrigger>
                       <SelectContent>
+                        <SelectItem value="none">Nenhum</SelectItem>
                         {sellers.map((s) => (
                           <SelectItem key={s.id} value={s.id}>
                             {s.name}
@@ -809,13 +813,16 @@ export default function Clientes() {
                     <div className="space-y-2">
                       <Label>Mentor(a) Atribuído(a)</Label>
                       <Select
-                        value={editingCliente.Mentor_a || ''}
-                        onValueChange={(v) => setEditingCliente({ ...editingCliente, Mentor_a: v })}
+                        value={editingCliente.Mentor_a || 'none'}
+                        onValueChange={(v) =>
+                          setEditingCliente({ ...editingCliente, Mentor_a: v === 'none' ? '' : v })
+                        }
                       >
                         <SelectTrigger className="bg-white">
                           <SelectValue placeholder="Selecione um mentor(a)" />
                         </SelectTrigger>
                         <SelectContent>
+                          <SelectItem value="none">Nenhum / Sem Mentor(a)</SelectItem>
                           {mentors.map((m) => (
                             <SelectItem key={m.id} value={m.id}>
                               {m.name || m.email}
