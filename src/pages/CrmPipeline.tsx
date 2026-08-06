@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import { getLeads, updateLead, LeadRecord } from '@/services/leads'
 import { useRealtime } from '@/hooks/use-realtime'
 import { Loader2, Phone, Mail } from 'lucide-react'
@@ -24,7 +24,6 @@ import {
 } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
 import { useNavigate } from 'react-router-dom'
-import { toast } from 'sonner'
 
 const COLUMNS = [
   { id: '1. Novo Lead', title: 'Novo Lead' },
@@ -138,9 +137,9 @@ export default function CrmPipeline() {
         description="Acompanhe a jornada dos seus leads pelo funil de vendas em 10 etapas."
       />
 
-      {/* A classe overflow-x-auto nativa garante o scroll horizontal suave do container inteiro */}
-      <div className="flex-1 px-8 pb-8 overflow-x-auto">
-        <div className="flex h-full gap-4 items-start pt-2 w-max">
+      {/* O min-h-0 aqui é essencial para travar a altura na tela e manter o scrollbar horizontal sempre visível */}
+      <div className="flex-1 min-h-0 px-8 pb-8 overflow-x-auto">
+        <div className="flex h-full gap-4 items-start pt-2 w-max pb-4">
           {COLUMNS.map((col) => {
             const colLeads = leads.filter((l) => (l.etapa_pipeline || '1. Novo Lead') === col.id)
 
@@ -149,7 +148,7 @@ export default function CrmPipeline() {
                 key={col.id}
                 onDragOver={handleDragOver}
                 onDrop={(e) => handleDrop(e, col.id)}
-                className="flex flex-col w-[280px] h-full shrink-0 rounded-xl bg-zinc-100/50 border border-zinc-200/60 overflow-hidden"
+                className="flex flex-col w-[280px] h-full max-h-full shrink-0 rounded-xl bg-zinc-100/50 border border-zinc-200/60 overflow-hidden"
               >
                 <div className="flex items-center justify-between px-3.5 py-3 shrink-0 bg-zinc-100/80">
                   <h3 className="font-semibold text-[13px] text-zinc-700">{col.title}</h3>
@@ -327,7 +326,6 @@ export default function CrmPipeline() {
                   </div>
                 </div>
 
-                {/* Nova seção de Disponibilidade */}
                 <div className="space-y-3">
                   <h4 className="text-[11px] font-bold tracking-wider text-zinc-400 uppercase">
                     Disponibilidade

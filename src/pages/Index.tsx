@@ -45,7 +45,6 @@ import {
 } from '@/components/ui/table'
 import { Input } from '@/components/ui/input'
 
-// Função tradutora para lidar com as datas que vêm com barra (/) do CSV
 const parseCustomDate = (dateStr?: string, fallbackStr?: string) => {
   const target = dateStr || fallbackStr || ''
   if (!target) return new Date()
@@ -113,7 +112,6 @@ export default function Index() {
     const endDate =
       period === 'custom' && customEnd ? endOfDay(parseCustomDate(customEnd)) : endOfDay(now)
 
-    // Filtro de Leads
     const fLeads = leads.filter((l) => {
       const d = parseISO(l.created)
       const dateMatch = isAfter(d, startDate) && isBefore(d, endDate)
@@ -121,7 +119,6 @@ export default function Index() {
       return dateMatch && sellerMatch
     })
 
-    // Filtro de Tarefas
     const fTasks = tasks.filter((t) => {
       const d = parseISO(t.due_date || t.created)
       const dateMatch = isAfter(d, startDate) && isBefore(d, endDate)
@@ -130,7 +127,6 @@ export default function Index() {
       return dateMatch && sellerMatch
     })
 
-    // Filtro de Vendas Hotmart (Agora imune a erros de data do CSV)
     const fVendas = vendas.filter((v) => {
       const d = parseCustomDate(v.data_pedido, v.created)
       const dateMatch = isAfter(d, startDate) && isBefore(d, endDate)
@@ -139,12 +135,11 @@ export default function Index() {
       if (sellerId !== 'todos') {
         const lead = leads.find((l) => l.id === v.lead_id)
         if (lead && lead.vend_resp !== sellerId) sellerMatch = false
-        if (!lead) sellerMatch = false // Se estou filtrando por Vendedor, vendas órfãs são ocultadas
+        if (!lead) sellerMatch = false
       }
       return dateMatch && sellerMatch
     })
 
-    // Filtra as METAS vigentes
     const fMetas = metas.filter((m) => {
       const metaIn = parseISO(m.periodo_in)
       const metaFin = parseISO(m.periodo_fin)
@@ -162,11 +157,9 @@ export default function Index() {
   }, [leads, tasks, vendas, metas, period, sellerId, customStart, customEnd])
 
   const kpis = useMemo(() => {
-    // 1. Agrupar as vendas por transação (ou por ID se não tiver transação, como nas importadas via CSV)
     const vendasAgrupadas = new Map<string, any[]>()
 
     filteredVendas.forEach((v) => {
-      // Se não tiver transação, usamos o próprio ID para não agrupar com nada e manter a venda individual
       const key = v.transacao || v.id
       if (!vendasAgrupadas.has(key)) {
         vendasAgrupadas.set(key, [])
@@ -176,16 +169,13 @@ export default function Index() {
 
     const validVendas: any[] = []
 
-    // 2. Para cada transação, achar o evento mais recente e checar se ele é um status de aprovação
     vendasAgrupadas.forEach((eventos) => {
-      // Ordena do mais recente (maior data) para o mais antigo
       eventos.sort((a, b) => {
         const dateA = parseCustomDate(a.data_pedido, a.created).getTime()
         const dateB = parseCustomDate(b.data_pedido, b.created).getTime()
         return dateB - dateA
       })
 
-      // O primeiro elemento do array ordenado é o evento mais recente daquela transação
       const eventoMaisRecente = eventos[0]
       const status = (eventoMaisRecente.status_compra || '').toUpperCase().trim()
 
@@ -202,7 +192,6 @@ export default function Index() {
         'PAYMENT_CONFIRMED',
       ].includes(status)
 
-      // Status que invalidam a transação (cancelamento, chargeback, reembolso)
       const statusCancelado = [
         'CANCELED',
         'CANCELLED',
@@ -210,10 +199,9 @@ export default function Index() {
         'REFUNDED',
         'REEMBOLSADA',
         'CHARGEBACK',
-        'PURCHASE_CANCELED', // caso o webhook mande o tipo de evento misturado no status
+        'PURCHASE_CANCELED',
       ].includes(status)
 
-      // Se o status mais recente for aprovado e NÃO for cancelado, a venda é válida!
       if (statusAprovado && !statusCancelado) {
         validVendas.push(eventoMaisRecente)
       }
@@ -256,7 +244,13 @@ export default function Index() {
     const rAbordagens = filteredLeads.filter(
       (l) => l.etapa_pipeline && l.etapa_pipeline !== '1. Novo Lead',
     ).length
-    const rConsultas = filteredTasks.filter((t) => t.tp_tarefa === 'Reunião / Consultoria').length
+
+    // CORREÇÃO: Busca por "Reunião/Consultoria" ou "Reunião / Consultoria" e garante que a tarefa foi concluída.
+    const rConsultas = filteredTasks.filter(
+      (t) =>
+        (t.tp_tarefa === 'Reunião/Consultoria' || t.tp_tarefa === 'Reunião / Consultoria') &&
+        t.completed,
+    ).length
 
     const agg = {
       Leads: { meta: 0, realizado: rLeads },
