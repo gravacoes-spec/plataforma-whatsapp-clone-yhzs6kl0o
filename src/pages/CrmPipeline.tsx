@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { getLeads, updateLead, LeadRecord } from '@/services/leads'
 import { useRealtime } from '@/hooks/use-realtime'
 import { Loader2, Phone, Mail } from 'lucide-react'
@@ -54,7 +54,22 @@ export default function CrmPipeline() {
   const [lossModalOpen, setLossModalOpen] = useState(false)
   const [pendingDrop, setPendingDrop] = useState<{ leadId: string; columnId: string } | null>(null)
   const [lossReason, setLossReason] = useState('')
+  const [isPanning, setIsPanning] = useState(false)
+  const [scrollContentWidth, setScrollContentWidth] = useState(0)
+
   const navigate = useNavigate()
+
+  // Scroll horizontal principal e scrollbar superior sincronizada.
+  const pipelineScrollRef = useRef<HTMLDivElement | null>(null)
+  const pipelineContentRef = useRef<HTMLDivElement | null>(null)
+  const topScrollRef = useRef<HTMLDivElement | null>(null)
+
+  // Controle do "grab scrolling" para navegar horizontalmente com o mouse.
+  const panRef = useRef({
+    active: false,
+    startX: 0,
+    startScrollLeft: 0,
+  })
 
   const loadData = async () => {
     try {
@@ -72,6 +87,143 @@ export default function CrmPipeline() {
   }, [])
 
   useRealtime('Leads', () => loadData())
+
+  // Mantém a largura da scrollbar superior igual à largura real do pipeline.
+  // ResizeObserver também cobre mudanças de viewport e alterações no conteúdo.
+  useEffect(() => {
+    const pipeline = pipelineScrollRef.current
+    const content = pipelineContentRef.current
+
+    if (!pipeline || !content) return
+
+    const updateScrollWidth = () => {
+      setScrollContentWidth(Math.max(content.scrollWidth, pipeline.clientWidth))
+    }
+
+    updateScrollWidth()
+
+    const observer = new ResizeObserver(updateScrollWidth)
+    observer.observe(pipeline)
+    observer.observe(content)
+
+    window.addEventListener('resize', updateScrollWidth)
+
+    return () => {
+      observer.disconnect()
+      window.removeEventListener('resize', updateScrollWidth)
+    }
+  }, [leads])
+
+  // Sincroniza a scrollbar superior com o scroll horizontal do pipeline.
+  useEffect(() => {
+    const pipeline = pipelineScrollRef.current
+    const topScroll = topScrollRef.current
+
+    if (!pipeline || !topScroll) return
+
+    const handlePipelineScroll = () => {
+      if (topScroll.scrollLeft !== pipeline.scrollLeft) {
+        topScroll.scrollLeft = pipeline.scrollLeft
+      }
+    }
+
+    const handleTopScroll = () => {
+      if (pipeline.scrollLeft !== topScroll.scrollLeft) {
+        pipeline.scrollLeft = topScroll.scrollLeft
+      }
+    }
+
+    pipeline.addEventListener('scroll', handlePipelineScroll, { passive: true })
+    topScroll.addEventListener('scroll', handleTopScroll, { passive: true })
+
+    return () => {
+      pipeline.removeEventListener('scroll', handlePipelineScroll)
+      topScroll.removeEventListener('scroll', handleTopScroll)
+    }
+  }, [])
+
+  // Permite Shift + roda do mouse para navegar horizontalmente.
+  useEffect(() => {
+    const pipeline = pipelineScrollRef.current
+    if (!pipeline) return
+
+    const handleWheel = (e: WheelEvent) => {
+      if (!e.shiftKey || Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return
+
+      const canScrollHorizontally = pipeline.scrollWidth > pipeline.clientWidth
+
+      if (!canScrollHorizontally) return
+
+      e.preventDefault()
+      pipeline.scrollLeft += e.deltaY
+    }
+
+    pipeline.addEventListener('wheel', handleWheel, { passive: false })
+
+    return () => {
+      pipeline.removeEventListener('wheel', handleWheel)
+    }
+  }, [])
+
+  // Finaliza o "grab scrolling" mesmo se o mouse sair do pipeline.
+  useEffect(() => {
+    const stopPanning = () => {
+      if (panRef.current.active) {
+        panRef.current.active = false
+        setIsPanning(false)
+      }
+    }
+
+    window.addEventListener('mouseup', stopPanning)
+    window.addEventListener('blur', stopPanning)
+
+    return () => {
+      window.removeEventListener('mouseup', stopPanning)
+      window.removeEventListener('blur', stopPanning)
+    }
+  }, [])
+
+  const handlePipelineMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    // Não interfere no clique/drag dos cards nem nos controles internos.
+    const target = e.target as HTMLElement
+    if (
+      target.closest('[data-lead-card="true"]') ||
+      target.closest('button') ||
+      target.closest('a') ||
+      target.closest('input') ||
+      target.closest('select') ||
+      target.closest('textarea')
+    ) {
+      return
+    }
+
+    const pipeline = pipelineScrollRef.current
+    if (!pipeline) return
+
+    panRef.current = {
+      active: true,
+      startX: e.clientX,
+      startScrollLeft: pipeline.scrollLeft,
+    }
+    setIsPanning(true)
+  }
+
+  const handlePipelineMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!panRef.current.active) return
+
+    const pipeline = pipelineScrollRef.current
+    if (!pipeline) return
+
+    const distance = e.clientX - panRef.current.startX
+    pipeline.scrollLeft = panRef.current.startScrollLeft - distance
+  }
+
+  const handlePipelineMouseUp = () => {
+    if (!panRef.current.active) return
+
+    panRef.current.active = false
+    setIsPanning(false)
+  }
 
   if (loading) {
     return (
@@ -131,13 +283,40 @@ export default function CrmPipeline() {
 
   return (
     <div className="flex-1 flex flex-col h-full bg-zinc-50/50 overflow-hidden">
-      <PageHeader
-        title="Pipeline CRM"
-        description="Acompanhe a jornada dos seus leads pelo funil de vendas em 10 etapas."
-      />
+      <div className="shrink-0 sticky top-0 z-30 bg-zinc-50/95 backdrop-blur-sm">
+        <PageHeader
+          title="Pipeline CRM"
+          description="Acompanhe a jornada dos seus leads pelo funil de vendas em 10 etapas."
+        />
 
-      <div className="flex-1 min-h-0 px-8 pb-8 overflow-x-auto [&::-webkit-scrollbar]:h-2.5 [&::-webkit-scrollbar-thumb]:bg-zinc-300 [&::-webkit-scrollbar-thumb]:rounded-full">
-        <div className="flex h-full gap-4 items-start pt-2 w-max pb-4">
+        {/*
+          Scrollbar horizontal fixa no topo do pipeline.
+          Ela é sincronizada com o container abaixo e permanece acessível
+          mesmo quando alguma coluna possui muitos leads.
+        */}
+        <div
+          ref={topScrollRef}
+          aria-label="Navegação horizontal do Pipeline"
+          className="mx-8 mb-2 h-3 overflow-x-auto overflow-y-hidden rounded-full bg-zinc-100/80 border border-zinc-200/60 [&::-webkit-scrollbar]:h-2.5 [&::-webkit-scrollbar-thumb]:bg-zinc-300 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent"
+        >
+          <div
+            aria-hidden="true"
+            style={{ width: scrollContentWidth > 0 ? scrollContentWidth : '100%', height: 1 }}
+          />
+        </div>
+      </div>
+
+      <div
+        ref={pipelineScrollRef}
+        onMouseDown={handlePipelineMouseDown}
+        onMouseMove={handlePipelineMouseMove}
+        onMouseUp={handlePipelineMouseUp}
+        className={cn(
+          'flex-1 min-h-0 min-w-0 px-8 pb-8 overflow-x-auto overflow-y-hidden [&::-webkit-scrollbar]:h-0 [&::-webkit-scrollbar-thumb]:bg-transparent [&::-webkit-scrollbar-track]:bg-transparent',
+          isPanning ? 'cursor-grabbing select-none' : 'cursor-grab',
+        )}
+      >
+        <div ref={pipelineContentRef} className="flex h-full gap-4 items-start pt-2 w-max pb-1">
           {COLUMNS.map((col) => {
             const colLeads = leads.filter((l) => (l.etapa_pipeline || '1. Novo Lead') === col.id)
 
@@ -164,6 +343,7 @@ export default function CrmPipeline() {
                         draggable
                         onDragStart={(e) => handleDragStart(e, lead.id)}
                         onClick={() => setSelectedLead(lead)}
+                        data-lead-card="true"
                         className="group flex flex-col p-3.5 bg-white rounded-lg shadow-sm border border-zinc-200 hover:border-[#052136] hover:shadow-md transition-all cursor-grab active:cursor-grabbing"
                       >
                         <div className="flex justify-between items-start mb-2 gap-2">
