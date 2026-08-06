@@ -45,6 +45,7 @@ import { toast } from 'sonner'
 import { format, parseISO } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { Switch } from '@/components/ui/switch'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import {
   AlertDialog,
@@ -77,6 +78,15 @@ const LOSS_REASONS = [
   'Comprado do concorrente',
   'Lead desqualificado (não quer se dedicar/não tem graduação específica)',
   'Lead não retornou o(s) contato(s)',
+]
+
+const DIAS_OPTIONS = [
+  { id: 'SEG', label: 'Seg' },
+  { id: 'TER', label: 'Ter' },
+  { id: 'QUA', label: 'Qua' },
+  { id: 'QUI', label: 'Qui' },
+  { id: 'SEXT', label: 'Sex' },
+  { id: 'SÁB', label: 'Sáb' },
 ]
 
 export default function Leads() {
@@ -555,21 +565,53 @@ export default function Leads() {
                       onChange={(e) => setEditingLead({ ...editingLead, name: e.target.value })}
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label>Telefone</Label>
-                    <Input
-                      value={editingLead.phone || ''}
-                      onChange={(e) => setEditingLead({ ...editingLead, phone: e.target.value })}
-                    />
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Telefone</Label>
+                      <Input
+                        value={editingLead.phone || ''}
+                        onChange={(e) => setEditingLead({ ...editingLead, phone: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>E-mail</Label>
+                      <Input
+                        value={editingLead.email || ''}
+                        onChange={(e) => setEditingLead({ ...editingLead, email: e.target.value })}
+                      />
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label>E-mail</Label>
-                    <Input
-                      value={editingLead.email || ''}
-                      onChange={(e) => setEditingLead({ ...editingLead, email: e.target.value })}
-                    />
+
+                  {/* Nova Seção de Dias Disponíveis com Checkboxes */}
+                  <div className="space-y-3 pt-2">
+                    <Label>Dias Disponíveis para Mentoria</Label>
+                    <div className="flex flex-wrap gap-4 bg-zinc-50 border border-zinc-200 rounded-lg p-3">
+                      {DIAS_OPTIONS.map((dia) => (
+                        <div key={dia.id} className="flex items-center space-x-1.5">
+                          <Checkbox
+                            id={`dia-${dia.id}`}
+                            checked={(editingLead.dias_ment || []).includes(dia.id)}
+                            onCheckedChange={(checked) => {
+                              const current = editingLead.dias_ment || []
+                              const updated = checked
+                                ? [...current, dia.id]
+                                : current.filter((id) => id !== dia.id)
+                              setEditingLead({ ...editingLead, dias_ment: updated })
+                            }}
+                          />
+                          <Label
+                            htmlFor={`dia-${dia.id}`}
+                            className="text-sm cursor-pointer font-normal text-zinc-700"
+                          >
+                            {dia.label}
+                          </Label>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                  <div className="space-y-2">
+
+                  <div className="space-y-2 pt-2">
                     <Label>Vendedor Responsável</Label>
                     <Select
                       value={editingLead.vend_resp || 'none'}

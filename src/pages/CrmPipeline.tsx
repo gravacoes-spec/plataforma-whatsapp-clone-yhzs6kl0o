@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { ScrollArea } from '@/components/ui/scroll-area'
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
 import { getLeads, updateLead, LeadRecord } from '@/services/leads'
 import { useRealtime } from '@/hooks/use-realtime'
 import { Loader2, Phone, Mail } from 'lucide-react'
@@ -23,12 +23,8 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
-import { Switch } from '@/components/ui/switch'
-import { getVendasByLeadAndEmail } from '@/services/hotmart'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
-import { format, parseISO } from 'date-fns'
-import { ptBR } from 'date-fns/locale'
 
 const COLUMNS = [
   { id: '1. Novo Lead', title: 'Novo Lead' },
@@ -60,18 +56,7 @@ export default function CrmPipeline() {
   const [lossModalOpen, setLossModalOpen] = useState(false)
   const [pendingDrop, setPendingDrop] = useState<{ leadId: string; columnId: string } | null>(null)
   const [lossReason, setLossReason] = useState('')
-  const [leadVendas, setLeadVendas] = useState<any[]>([])
   const navigate = useNavigate()
-
-  useEffect(() => {
-    if (selectedLead?.id || selectedLead?.email) {
-      getVendasByLeadAndEmail(selectedLead.id || '', selectedLead.email || '')
-        .then(setLeadVendas)
-        .catch(() => setLeadVendas([]))
-    } else {
-      setLeadVendas([])
-    }
-  }, [selectedLead?.id, selectedLead?.email])
 
   const loadData = async () => {
     try {
@@ -153,8 +138,9 @@ export default function CrmPipeline() {
         description="Acompanhe a jornada dos seus leads pelo funil de vendas em 10 etapas."
       />
 
-      <div className="flex-1 overflow-x-auto px-8 pb-8">
-        <div className="flex h-full min-w-max gap-4 items-start pt-2">
+      {/* A classe overflow-x-auto nativa garante o scroll horizontal suave do container inteiro */}
+      <div className="flex-1 px-8 pb-8 overflow-x-auto">
+        <div className="flex h-full gap-4 items-start pt-2 w-max">
           {COLUMNS.map((col) => {
             const colLeads = leads.filter((l) => (l.etapa_pipeline || '1. Novo Lead') === col.id)
 
@@ -163,7 +149,7 @@ export default function CrmPipeline() {
                 key={col.id}
                 onDragOver={handleDragOver}
                 onDrop={(e) => handleDrop(e, col.id)}
-                className="flex flex-col w-[280px] max-h-full shrink-0 rounded-xl bg-zinc-100/50 border border-zinc-200/60 overflow-hidden"
+                className="flex flex-col w-[280px] h-full shrink-0 rounded-xl bg-zinc-100/50 border border-zinc-200/60 overflow-hidden"
               >
                 <div className="flex items-center justify-between px-3.5 py-3 shrink-0 bg-zinc-100/80">
                   <h3 className="font-semibold text-[13px] text-zinc-700">{col.title}</h3>
@@ -341,48 +327,32 @@ export default function CrmPipeline() {
                   </div>
                 </div>
 
+                {/* Nova seção de Disponibilidade */}
                 <div className="space-y-3">
                   <h4 className="text-[11px] font-bold tracking-wider text-zinc-400 uppercase">
-                    Conversão
+                    Disponibilidade
                   </h4>
-                  <div className="space-y-3">
-                    <div className="space-y-2">
-                      <span className="text-[13px] text-zinc-500">Histórico de Compras:</span>
-                      {leadVendas.length > 0 ? (
-                        <div className="space-y-2">
-                          {leadVendas.map((v) => (
-                            <div
-                              key={v.id}
-                              className="flex flex-col p-3 bg-zinc-50 rounded-lg border border-zinc-100"
+                  <div className="space-y-2.5">
+                    <div className="flex flex-col text-[13px] gap-2">
+                      <span className="text-zinc-500">Dias preferenciais para Mentoria:</span>
+                      <div className="flex flex-wrap gap-1.5 mt-1">
+                        {selectedLead.dias_ment &&
+                        Array.isArray(selectedLead.dias_ment) &&
+                        selectedLead.dias_ment.length > 0 ? (
+                          selectedLead.dias_ment.map((dia) => (
+                            <span
+                              key={dia}
+                              className="text-[11px] font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md"
                             >
-                              <div className="flex justify-between items-center">
-                                <span className="text-[13px] font-medium text-zinc-800">
-                                  {v.nome_produto || '-'}
-                                </span>
-                                <span className="text-[12px] font-semibold text-emerald-600">
-                                  {v.moeda} {v.preco_total?.toFixed(2)}
-                                </span>
-                              </div>
-                              <div className="flex justify-between items-center mt-1">
-                                <span className="text-[11px] text-zinc-500">
-                                  {v.status_compra || '-'}
-                                </span>
-                                <span className="text-[11px] text-zinc-400">
-                                  {v.data_pedido
-                                    ? format(parseISO(v.data_pedido), 'dd/MM/yyyy', {
-                                        locale: ptBR,
-                                      })
-                                    : '-'}
-                                </span>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="text-[12px] text-zinc-400 italic">
-                          Nenhuma compra registrada.
-                        </p>
-                      )}
+                              {dia}
+                            </span>
+                          ))
+                        ) : (
+                          <span className="text-[12px] font-medium text-zinc-400 italic">
+                            Não informado
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -430,7 +400,7 @@ export default function CrmPipeline() {
                   onClick={() => navigate('/crm/tasks?lead=' + selectedLead.id)}
                   className="flex-1 text-xs text-zinc-700 border-zinc-300 hover:bg-zinc-100 hover:text-zinc-900"
                 >
-                  Adicionar Tarefas
+                  Adicionar Tarefa
                 </Button>
                 <Button
                   onClick={() => navigate('/inbox?phone=' + selectedLead.phone)}
