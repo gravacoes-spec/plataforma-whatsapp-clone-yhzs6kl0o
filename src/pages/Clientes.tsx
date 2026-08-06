@@ -15,6 +15,7 @@ import {
   createMentoriaPeriodo,
   MentoriaPeriodoRecord,
 } from '@/services/mentoria_periodos'
+import pb from '@/lib/pocketbase/client'
 import { useRealtime } from '@/hooks/use-realtime'
 import { useAuth } from '@/hooks/use-auth'
 import { Search, Loader2, Pencil, Trash2, ShoppingBag, Download, Plus } from 'lucide-react'
@@ -59,14 +60,20 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 
+type EnrichedCliente = BdClienteRecord & {
+  produto_exibicao?: string
+  valor_exibicao?: number
+}
+
 export default function Clientes() {
   const { user } = useAuth()
   const [clientes, setClientes] = useState<BdClienteRecord[]>([])
-  const [filteredClientes, setFilteredClientes] = useState<BdClienteRecord[]>([])
+  const [filteredClientes, setFilteredClientes] = useState<EnrichedCliente[]>([])
   const [leads, setLeads] = useState<LeadRecord[]>([])
   const [users, setUsers] = useState<any[]>([])
   const [mentors, setMentors] = useState<any[]>([])
   const [sellers, setSellers] = useState<any[]>([])
+  const [todasVendas, setTodasVendas] = useState<any[]>([])
 
   const [search, setSearch] = useState('')
   const [filterProduto, setFilterProduto] = useState('all')
@@ -84,15 +91,17 @@ export default function Clientes() {
 
   const loadData = async () => {
     try {
-      const [cliData, leadData, usersData, mentorsData] = await Promise.all([
+      const [cliData, leadData, usersData, mentorsData, vendasData] = await Promise.all([
         getBdClientes(),
         getLeads(),
         getUsers(),
         getMentors(),
+        pb.collection('vendas_hotmart').getFullList(),
       ])
       setClientes(cliData)
       setLeads(leadData)
       setUsers(usersData)
+      setTodasVendas(vendasData)
 
       const activeMentors = mentorsData.filter((m) => m.ativo)
 
@@ -121,43 +130,71 @@ export default function Clientes() {
   }, [])
 
   useRealtime('bd_clientes', () => loadData())
+  useRealtime('vendas_hotmart', () => loadData())
+
+  // Cria uma lista de clientes cruzada com o último produto comprado
+  const clientesEnriquecidos = useMemo(() => {
+    return clientes.map((c) => {
+      const clientSales = todasVendas.filter(
+        (v) =>
+          (c.email && v.email === c.email) || (c.Vend_Resp_Lead && v.lead_id === c.Vend_Resp_Lead),
+      )
+
+      let latestSale = null
+      if (clientSales.length > 0) {
+        clientSales.sort((a, b) => {
+          const dateA = new Date(a.data_pedido || a.created).getTime()
+          const dateB = new Date(b.data_pedido || b.created).getTime()
+          return dateB - dateA
+        })
+        latestSale = clientSales[0]
+      }
+
+      return {
+        ...c,
+        produto_exibicao: latestSale ? latestSale.nome_produto : c.Nome_Prod,
+        valor_exibicao: latestSale ? latestSale.preco_total : c.Vlr_Pago,
+      } as EnrichedCliente
+    })
+  }, [clientes, todasVendas])
 
   const uniqueProducts = useMemo(() => {
-    const products = clientes.map((c) => c.Nome_Prod).filter(Boolean) as string[]
+    const products = clientesEnriquecidos.map((c) => c.produto_exibicao).filter(Boolean) as string[]
     return Array.from(new Set(products))
-  }, [clientes])
+  }, [clientesEnriquecidos])
 
   useEffect(() => {
-    setFilteredClientes(
-      clientes.filter((c) => {
-        const matchSearch =
-          (c.Aluno_a || '').toLowerCase().includes(search.toLowerCase()) ||
-          (c.email || '').toLowerCase().includes(search.toLowerCase()) ||
-          (c.Telefone || '').includes(search)
+    let result = clientesEnriquecidos.filter((c) => {
+      const matchSearch =
+        (c.Aluno_a || '').toLowerCase().includes(search.toLowerCase()) ||
+        (c.email || '').toLowerCase().includes(search.toLowerCase()) ||
+        (c.Telefone || '').includes(search)
 
-        const matchProduto = filterProduto === 'all' || c.Nome_Prod === filterProduto
-        const matchMentor = filterMentor === 'all' || c.Mentor_a === filterMentor
+      const matchProduto = filterProduto === 'all' || c.produto_exibicao === filterProduto
+      const matchMentor = filterMentor === 'all' || c.Mentor_a === filterMentor
 
-        let matchStatus = true
-        if (filterStatus !== 'all') {
-          let currentStatus = 'nao_iniciada'
+      let matchStatus = true
+      if (filterStatus !== 'all') {
+        let currentStatus = 'nao_iniciada'
 
-          if (c.Data_inicio && !c.Data_term) {
-            currentStatus = 'ativa'
-          } else if (c.Data_term) {
-            currentStatus =
-              isPast(parseISO(c.Data_term)) && !isToday(parseISO(c.Data_term))
-                ? 'expirada'
-                : 'ativa'
-          }
-
-          matchStatus = currentStatus === filterStatus
+        if (c.Data_inicio && !c.Data_term) {
+          currentStatus = 'ativa'
+        } else if (c.Data_term) {
+          currentStatus =
+            isPast(parseISO(c.Data_term)) && !isToday(parseISO(c.Data_term)) ? 'expirada' : 'ativa'
         }
 
-        return matchSearch && matchProduto && matchMentor && matchStatus
-      }),
-    )
-  }, [search, filterProduto, filterMentor, filterStatus, clientes])
+        matchStatus = currentStatus === filterStatus
+      }
+
+      return matchSearch && matchProduto && matchMentor && matchStatus
+    })
+
+    // Ordenação Alfabética dos clientes
+    result.sort((a, b) => (a.Aluno_a || '').localeCompare(b.Aluno_a || '', 'pt-BR'))
+
+    setFilteredClientes(result)
+  }, [search, filterProduto, filterMentor, filterStatus, clientesEnriquecidos])
 
   useEffect(() => {
     if (editingCliente?.id && (editingCliente?.Vend_Resp_Lead || editingCliente?.email)) {
@@ -202,8 +239,10 @@ export default function Clientes() {
     }
   }
 
-  const handleOpenModal = (cliente: Partial<BdClienteRecord>) => {
-    setEditingCliente({ ...cliente })
+  const handleOpenModal = (cliente: EnrichedCliente) => {
+    // Remove os campos virtuais de exibição antes de jogar pro Modal/Banco de Dados
+    const { produto_exibicao, valor_exibicao, ...rest } = cliente
+    setEditingCliente({ ...rest })
     setIsModalOpen(true)
   }
 
@@ -282,7 +321,7 @@ export default function Clientes() {
       'Telefone',
       'Cidade',
       'UF',
-      'Produto',
+      'Produto (Recente)',
       'Valor Pago',
       'Mentor',
       'Status Mentoria',
@@ -305,8 +344,8 @@ export default function Clientes() {
           `"${(c.Telefone || '').replace(/"/g, '""')}"`,
           `"${(c.Cidade || '').replace(/"/g, '""')}"`,
           `"${(c.UF || '').replace(/"/g, '""')}"`,
-          `"${(c.Nome_Prod || '').replace(/"/g, '""')}"`,
-          `"${c.Vlr_Pago || 0}"`,
+          `"${(c.produto_exibicao || '').replace(/"/g, '""')}"`,
+          `"${c.valor_exibicao || 0}"`,
           `"${mentorName.replace(/"/g, '""')}"`,
           `"${statusCsv}"`,
         ].join(',')
@@ -454,7 +493,6 @@ export default function Clientes() {
           </div>
         </div>
 
-        {/* CONTADOR DE CLIENTES ADICIONADO AQUI */}
         <div className="mb-3 text-sm text-zinc-500 font-medium">
           Total encontrado:{' '}
           <span className="font-bold text-[#052136]">{filteredClientes.length}</span> cliente(s)
@@ -484,10 +522,10 @@ export default function Clientes() {
                   <TableCell>
                     <div className="flex flex-col">
                       <span className="text-[#052136] text-[13px] font-medium">
-                        {c.Nome_Prod || '-'}
+                        {c.produto_exibicao || '-'}
                       </span>
                       <span className="text-zinc-500 text-[12px]">
-                        R$ {c.Vlr_Pago?.toFixed(2) || '0.00'}
+                        R$ {c.valor_exibicao?.toFixed(2) || '0.00'}
                       </span>
                     </div>
                   </TableCell>

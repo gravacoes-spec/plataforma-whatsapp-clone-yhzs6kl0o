@@ -84,7 +84,9 @@ export default function Cadastro() {
         etapa_pipeline: '1. Novo Lead',
       })
       setIsSuccess(true)
-      toast.success('Formulário enviado com sucesso!')
+      toast.success('Formulário enviado com sucesso!', {
+        style: { background: '#3dcd1dff', color: 'white', border: 'none' },
+      })
     } catch (err) {
       const fieldErrors = extractFieldErrors(err)
       if (Object.keys(fieldErrors).length > 0) {
@@ -92,7 +94,9 @@ export default function Cadastro() {
           form.setError(field as any, { type: 'server', message: msg })
         })
       } else {
-        toast.error('Ocorreu um erro ao enviar o formulário. Tente novamente.')
+        toast.error('Ocorreu um erro ao enviar o formulário. Tente novamente.', {
+          style: { background: '#ef4444', color: 'white', border: 'none' },
+        })
       }
     }
   }

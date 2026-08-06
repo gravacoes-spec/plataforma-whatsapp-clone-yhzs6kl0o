@@ -174,7 +174,8 @@ export default function Tasks() {
     try {
       const payload: any = {
         description: newTask.description,
-        due_date: newTask.due_date ? new Date(newTask.due_date).toISOString() : null,
+        // CORREÇÃO DE FUSO HORÁRIO: Forçamos a hora para 12:00:00 para evitar que o UTC jogue a data para o dia anterior.
+        due_date: newTask.due_date ? new Date(`${newTask.due_date}T12:00:00`).toISOString() : null,
         user_resp: responsavelFinal,
         tp_tarefa: newTask.tp_tarefa || null,
       }
