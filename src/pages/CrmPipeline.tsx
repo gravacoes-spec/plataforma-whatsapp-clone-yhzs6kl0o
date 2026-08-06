@@ -54,22 +54,21 @@ export default function CrmPipeline() {
   const [lossModalOpen, setLossModalOpen] = useState(false)
   const [pendingDrop, setPendingDrop] = useState<{ leadId: string; columnId: string } | null>(null)
   const [lossReason, setLossReason] = useState('')
-  const [isPanning, setIsPanning] = useState(false)
-  const [scrollContentWidth, setScrollContentWidth] = useState(0)
-
   const navigate = useNavigate()
 
-  // Scroll horizontal principal e scrollbar superior sincronizada.
+  // Referências do scroll horizontal do Pipeline.
   const pipelineScrollRef = useRef<HTMLDivElement | null>(null)
   const pipelineContentRef = useRef<HTMLDivElement | null>(null)
   const topScrollRef = useRef<HTMLDivElement | null>(null)
+  const topScrollContentRef = useRef<HTMLDivElement | null>(null)
 
-  // Controle do "grab scrolling" para navegar horizontalmente com o mouse.
+  // Controle do "grab to scroll".
   const panRef = useRef({
     active: false,
     startX: 0,
     startScrollLeft: 0,
   })
+  const [isPanning, setIsPanning] = useState(false)
 
   const loadData = async () => {
     try {
@@ -88,90 +87,84 @@ export default function CrmPipeline() {
 
   useRealtime('Leads', () => loadData())
 
-  // Mantém a largura da scrollbar superior igual à largura real do pipeline.
-  // ResizeObserver também cobre mudanças de viewport e alterações no conteúdo.
-  useEffect(() => {
-    const pipeline = pipelineScrollRef.current
-    const content = pipelineContentRef.current
-
-    if (!pipeline || !content) return
-
-    const updateScrollWidth = () => {
-      setScrollContentWidth(Math.max(content.scrollWidth, pipeline.clientWidth))
-    }
-
-    updateScrollWidth()
-
-    const observer = new ResizeObserver(updateScrollWidth)
-    observer.observe(pipeline)
-    observer.observe(content)
-
-    window.addEventListener('resize', updateScrollWidth)
-
-    return () => {
-      observer.disconnect()
-      window.removeEventListener('resize', updateScrollWidth)
-    }
-  }, [leads])
-
-  // Sincroniza a scrollbar superior com o scroll horizontal do pipeline.
+  /*
+   * A scrollbar superior e o Pipeline usam o MESMO scrollLeft.
+   * A barra superior é apenas uma "ponte" visual para o mesmo eixo X.
+   *
+   * Importante: não usamos uma largura artificial calculada por estado.
+   * O elemento interno da scrollbar mede diretamente o conteúdo real
+   * do Pipeline através do scrollWidth.
+   */
   useEffect(() => {
     const pipeline = pipelineScrollRef.current
     const topScroll = topScrollRef.current
+    const topContent = topScrollContentRef.current
+    const pipelineContent = pipelineContentRef.current
 
-    if (!pipeline || !topScroll) return
+    if (!pipeline || !topScroll || !topContent || !pipelineContent) return
 
-    const handlePipelineScroll = () => {
+    const syncTopWidth = () => {
+      // A largura precisa representar o scrollWidth real do Pipeline.
+      topContent.style.width = `${pipeline.scrollWidth}px`
+    }
+
+    const syncTopFromPipeline = () => {
       if (topScroll.scrollLeft !== pipeline.scrollLeft) {
         topScroll.scrollLeft = pipeline.scrollLeft
       }
     }
 
-    const handleTopScroll = () => {
+    const syncPipelineFromTop = () => {
       if (pipeline.scrollLeft !== topScroll.scrollLeft) {
         pipeline.scrollLeft = topScroll.scrollLeft
       }
     }
 
-    pipeline.addEventListener('scroll', handlePipelineScroll, { passive: true })
-    topScroll.addEventListener('scroll', handleTopScroll, { passive: true })
+    syncTopWidth()
+    syncTopFromPipeline()
+
+    const resizeObserver = new ResizeObserver(syncTopWidth)
+    resizeObserver.observe(pipeline)
+    resizeObserver.observe(pipelineContent)
+
+    pipeline.addEventListener('scroll', syncTopFromPipeline, { passive: true })
+    topScroll.addEventListener('scroll', syncPipelineFromTop, { passive: true })
+
+    window.addEventListener('resize', syncTopWidth)
 
     return () => {
-      pipeline.removeEventListener('scroll', handlePipelineScroll)
-      topScroll.removeEventListener('scroll', handleTopScroll)
+      resizeObserver.disconnect()
+      pipeline.removeEventListener('scroll', syncTopFromPipeline)
+      topScroll.removeEventListener('scroll', syncPipelineFromTop)
+      window.removeEventListener('resize', syncTopWidth)
     }
-  }, [])
+  }, [leads])
 
-  // Permite Shift + roda do mouse para navegar horizontalmente.
+  // Shift + roda do mouse = navegação horizontal.
   useEffect(() => {
     const pipeline = pipelineScrollRef.current
     if (!pipeline) return
 
-    const handleWheel = (e: WheelEvent) => {
-      if (!e.shiftKey || Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return
+    const handleWheel = (event: WheelEvent) => {
+      if (!event.shiftKey) return
+      if (Math.abs(event.deltaY) <= Math.abs(event.deltaX)) return
+      if (pipeline.scrollWidth <= pipeline.clientWidth) return
 
-      const canScrollHorizontally = pipeline.scrollWidth > pipeline.clientWidth
-
-      if (!canScrollHorizontally) return
-
-      e.preventDefault()
-      pipeline.scrollLeft += e.deltaY
+      event.preventDefault()
+      pipeline.scrollLeft += event.deltaY
     }
 
     pipeline.addEventListener('wheel', handleWheel, { passive: false })
 
-    return () => {
-      pipeline.removeEventListener('wheel', handleWheel)
-    }
+    return () => pipeline.removeEventListener('wheel', handleWheel)
   }, [])
 
-  // Finaliza o "grab scrolling" mesmo se o mouse sair do pipeline.
+  // Finaliza o grab-scroll mesmo se o mouse sair da área do Pipeline.
   useEffect(() => {
     const stopPanning = () => {
-      if (panRef.current.active) {
-        panRef.current.active = false
-        setIsPanning(false)
-      }
+      if (!panRef.current.active) return
+      panRef.current.active = false
+      setIsPanning(false)
     }
 
     window.addEventListener('mouseup', stopPanning)
@@ -183,9 +176,11 @@ export default function CrmPipeline() {
     }
   }, [])
 
-  const handlePipelineMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
-    // Não interfere no clique/drag dos cards nem nos controles internos.
-    const target = e.target as HTMLElement
+  const startPipelinePan = (event: React.MouseEvent<HTMLDivElement>) => {
+    const target = event.target as HTMLElement
+
+    // Não captura o mouse quando o usuário estiver interagindo com cards
+    // ou elementos clicáveis.
     if (
       target.closest('[data-lead-card="true"]') ||
       target.closest('button') ||
@@ -202,25 +197,25 @@ export default function CrmPipeline() {
 
     panRef.current = {
       active: true,
-      startX: e.clientX,
+      startX: event.clientX,
       startScrollLeft: pipeline.scrollLeft,
     }
+
     setIsPanning(true)
   }
 
-  const handlePipelineMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+  const movePipelinePan = (event: React.MouseEvent<HTMLDivElement>) => {
     if (!panRef.current.active) return
 
     const pipeline = pipelineScrollRef.current
     if (!pipeline) return
 
-    const distance = e.clientX - panRef.current.startX
-    pipeline.scrollLeft = panRef.current.startScrollLeft - distance
+    const deltaX = event.clientX - panRef.current.startX
+    pipeline.scrollLeft = panRef.current.startScrollLeft - deltaX
   }
 
-  const handlePipelineMouseUp = () => {
+  const stopPipelinePan = () => {
     if (!panRef.current.active) return
-
     panRef.current.active = false
     setIsPanning(false)
   }
@@ -283,36 +278,47 @@ export default function CrmPipeline() {
 
   return (
     <div className="flex-1 flex flex-col h-full bg-zinc-50/50 overflow-hidden">
-      <div className="shrink-0 sticky top-0 z-30 bg-zinc-50/95 backdrop-blur-sm">
+      {/* Header fixo dentro da área do CRM. */}
+      <div className="shrink-0 z-30 bg-zinc-50/95 backdrop-blur-sm">
         <PageHeader
           title="Pipeline CRM"
           description="Acompanhe a jornada dos seus leads pelo funil de vendas em 10 etapas."
         />
 
         {/*
-          Scrollbar horizontal fixa no topo do pipeline.
-          Ela é sincronizada com o container abaixo e permanece acessível
-          mesmo quando alguma coluna possui muitos leads.
+          CONTROLE HORIZONTAL PRINCIPAL
+          --------------------------------
+          Este é um elemento de scroll real. Seu conteúdo interno recebe
+          exatamente o mesmo scrollWidth do Pipeline abaixo.
         */}
         <div
           ref={topScrollRef}
           aria-label="Navegação horizontal do Pipeline"
-          className="mx-8 mb-2 h-3 overflow-x-auto overflow-y-hidden rounded-full bg-zinc-100/80 border border-zinc-200/60 [&::-webkit-scrollbar]:h-2.5 [&::-webkit-scrollbar-thumb]:bg-zinc-300 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent"
+          className="mx-8 mb-2 h-3 overflow-x-scroll overflow-y-hidden rounded-full bg-zinc-100 border border-zinc-200/70 [&::-webkit-scrollbar]:h-2.5 [&::-webkit-scrollbar-thumb]:bg-zinc-400 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-zinc-100"
         >
           <div
+            ref={topScrollContentRef}
             aria-hidden="true"
-            style={{ width: scrollContentWidth > 0 ? scrollContentWidth : '100%', height: 1 }}
+            style={{ width: '100%', height: '1px' }}
           />
         </div>
       </div>
 
+      {/*
+        O Pipeline continua sendo o verdadeiro container horizontal.
+        Mantemos sua scrollbar nativa como fallback, mas ela fica
+        discreta para evitar duas barras visualmente concorrentes.
+      */}
       <div
         ref={pipelineScrollRef}
-        onMouseDown={handlePipelineMouseDown}
-        onMouseMove={handlePipelineMouseMove}
-        onMouseUp={handlePipelineMouseUp}
+        onMouseDown={startPipelinePan}
+        onMouseMove={movePipelinePan}
+        onMouseUp={stopPipelinePan}
+        onMouseLeave={stopPipelinePan}
         className={cn(
-          'flex-1 min-h-0 min-w-0 px-8 pb-8 overflow-x-auto overflow-y-hidden [&::-webkit-scrollbar]:h-0 [&::-webkit-scrollbar-thumb]:bg-transparent [&::-webkit-scrollbar-track]:bg-transparent',
+          'flex-1 min-h-0 min-w-0 px-8 pb-8 overflow-x-auto overflow-y-hidden',
+          '[&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:bg-zinc-200 [&::-webkit-scrollbar-thumb]:rounded-full',
+          '[&::-webkit-scrollbar-track]:bg-transparent',
           isPanning ? 'cursor-grabbing select-none' : 'cursor-grab',
         )}
       >
