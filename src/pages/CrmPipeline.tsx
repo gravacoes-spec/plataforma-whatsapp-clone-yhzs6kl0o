@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import { getLeads, updateLead, LeadRecord } from '@/services/leads'
 import { useRealtime } from '@/hooks/use-realtime'
 import { Loader2, Phone, Mail } from 'lucide-react'
@@ -137,8 +136,7 @@ export default function CrmPipeline() {
         description="Acompanhe a jornada dos seus leads pelo funil de vendas em 10 etapas."
       />
 
-      {/* O min-h-0 aqui é essencial para travar a altura na tela e manter o scrollbar horizontal sempre visível */}
-      <div className="flex-1 min-h-0 px-8 pb-8 overflow-x-auto">
+      <div className="flex-1 min-h-0 px-8 pb-8 overflow-x-auto [&::-webkit-scrollbar]:h-2.5 [&::-webkit-scrollbar-thumb]:bg-zinc-300 [&::-webkit-scrollbar-thumb]:rounded-full">
         <div className="flex h-full gap-4 items-start pt-2 w-max pb-4">
           {COLUMNS.map((col) => {
             const colLeads = leads.filter((l) => (l.etapa_pipeline || '1. Novo Lead') === col.id)
@@ -148,7 +146,7 @@ export default function CrmPipeline() {
                 key={col.id}
                 onDragOver={handleDragOver}
                 onDrop={(e) => handleDrop(e, col.id)}
-                className="flex flex-col w-[280px] h-full max-h-full shrink-0 rounded-xl bg-zinc-100/50 border border-zinc-200/60 overflow-hidden"
+                className="flex flex-col w-[280px] max-h-full shrink-0 rounded-xl bg-zinc-100/50 border border-zinc-200/60 overflow-hidden"
               >
                 <div className="flex items-center justify-between px-3.5 py-3 shrink-0 bg-zinc-100/80">
                   <h3 className="font-semibold text-[13px] text-zinc-700">{col.title}</h3>
@@ -157,8 +155,9 @@ export default function CrmPipeline() {
                   </div>
                 </div>
 
-                <ScrollArea className="flex-1">
-                  <div className="flex flex-col gap-2.5 px-2.5 pb-4 pt-2">
+                {/* SUBSTITUIÇÃO AQUI: Scroll nativo garantindo o min-h-0 */}
+                <div className="flex-1 overflow-y-auto min-h-0 px-2.5 pb-4 pt-2 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-zinc-200 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-zinc-300">
+                  <div className="flex flex-col gap-2.5">
                     {colLeads.map((lead) => (
                       <div
                         key={lead.id}
@@ -200,7 +199,7 @@ export default function CrmPipeline() {
                       </div>
                     )}
                   </div>
-                </ScrollArea>
+                </div>
               </div>
             )
           })}
