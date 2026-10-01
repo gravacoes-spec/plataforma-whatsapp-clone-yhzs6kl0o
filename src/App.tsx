@@ -22,7 +22,7 @@ import Cadastro from './pages/Cadastro'
 import HotmartLogs from './pages/HotmartLogs'
 
 const App = () => (
-  <BrowserRouter future={{ v7_startTransition: false, v7_relativeSplatPath: false }}>
+  <BrowserRouter>
     <TooltipProvider>
       <Toaster />
       <Sonner />

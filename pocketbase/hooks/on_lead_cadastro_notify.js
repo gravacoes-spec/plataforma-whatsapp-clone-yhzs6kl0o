@@ -1,10 +1,11 @@
+// Hook de notificação por e-mail para novos cadastros de leads via /cadastro
 onRecordCreate((e) => {
   try {
     var record = e.record
     var etapa = record.getString('etapa_pipeline')
 
     // Disparar apenas se o registro vier do formulário público (/cadastro),
-    // identificado exclusivamente por etapa_pipeline = '1. Novo Lead'.
+    // identificado pela etapa inicial '1. Novo Lead'.
     if (etapa !== '1. Novo Lead') {
       return e.next()
     }
