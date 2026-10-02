@@ -29,6 +29,7 @@ import {
   Square,
   Bot,
   BotOff,
+  CheckSquare,
 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -66,6 +67,11 @@ export default function Inbox() {
   const [loadingContacts, setLoadingContacts] = useState(true)
   const [loadingMessages, setLoadingMessages] = useState(false)
   const [instance, setInstance] = useState<any>(null)
+
+  // Estados para seleção e exclusão de conversas
+  const [isSelectMode, setIsSelectMode] = useState(false)
+  const [selectedChats, setSelectedChats] = useState<string[]>([])
+  const [isDeletingChats, setIsDeletingChats] = useState(false)
 
   // File states
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
@@ -363,6 +369,47 @@ export default function Inbox() {
       setMessages([])
     } finally {
       setLoadingMessages(false)
+    }
+  }
+
+  const handleDeleteSelectedChats = async () => {
+    if (selectedChats.length === 0) return
+    setIsDeletingChats(true)
+
+    try {
+      for (const contactId of selectedChats) {
+        // 1. Buscar todas as mensagens atreladas a esta conversa
+        const msgs = await pb.collection('whatsapp_messages').getFullList({
+          filter: `contact_id="${contactId}"`,
+          $autoCancel: false, // Necessário para evitar cancelamento de requisições simultâneas
+        })
+
+        // 2. Apagar cada mensagem (executado em paralelo para maior rapidez)
+        await Promise.all(
+          msgs.map((msg) =>
+            pb.collection('whatsapp_messages').delete(msg.id, { $autoCancel: false }),
+          ),
+        )
+
+        // OBS: Se você quiser que o SISTEMA também apague o CONTATO (Lead/Usuário) da agenda
+        // do CRM logo após limpar as mensagens, basta descomentar a linha abaixo:
+        // await pb.collection('whatsapp_contacts').delete(contactId, { $autoCancel: false })
+      }
+
+      toast({ title: 'Registros excluídos com sucesso!' })
+      setIsSelectMode(false)
+
+      // Limpa a tela caso a conversa ativa tenha sido excluída
+      if (selectedContact && selectedChats.includes(selectedContact.id)) {
+        setSelectedContact(null)
+        setMessages([])
+      }
+      setSelectedChats([])
+    } catch (err) {
+      console.error('Erro ao excluir registros:', err)
+      toast({ variant: 'destructive', title: 'Erro ao excluir as conversas' })
+    } finally {
+      setIsDeletingChats(false)
     }
   }
 
@@ -719,14 +766,51 @@ export default function Inbox() {
             )}
           </div>
 
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-[15px] w-[15px] text-zinc-400 pointer-events-none" />
-            <Input
-              placeholder="Buscar contatos..."
-              className="pl-9 h-9 bg-zinc-50/80 border-zinc-200/70 text-[13.5px] placeholder:text-zinc-400 focus-visible:ring-violet-500/30 focus-visible:ring-offset-0 focus-visible:border-violet-300"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-[15px] w-[15px] text-zinc-400 pointer-events-none" />
+                <Input
+                  placeholder="Buscar contatos..."
+                  className="pl-9 h-9 bg-zinc-50/80 border-zinc-200/70 text-[13.5px] placeholder:text-zinc-400 focus-visible:ring-violet-500/30 focus-visible:ring-offset-0 focus-visible:border-violet-300"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+              </div>
+              <Button
+                variant={isSelectMode ? 'secondary' : 'ghost'}
+                size="sm"
+                className="h-9 px-2.5 text-xs font-medium shrink-0"
+                onClick={() => {
+                  setIsSelectMode(!isSelectMode)
+                  setSelectedChats([])
+                }}
+              >
+                {isSelectMode ? 'Cancelar' : 'Selecionar'}
+              </Button>
+            </div>
+
+            {isSelectMode && (
+              <div className="flex items-center justify-between bg-zinc-50 p-2 rounded-lg border border-zinc-200/70">
+                <span className="text-xs font-medium text-zinc-600">
+                  {selectedChats.length} selecionada(s)
+                </span>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  className="h-7 px-3 text-xs"
+                  disabled={selectedChats.length === 0 || isDeletingChats}
+                  onClick={handleDeleteSelectedChats}
+                >
+                  {isDeletingChats ? (
+                    <Loader2 className="h-3 w-3 animate-spin mr-1.5" />
+                  ) : (
+                    <Trash2 className="h-3 w-3 mr-1.5" />
+                  )}
+                  Apagar Registros
+                </Button>
+              </div>
+            )}
           </div>
         </div>
 
@@ -753,24 +837,46 @@ export default function Inbox() {
                   return (
                     <button
                       key={contact.id}
-                      onClick={() => setSelectedContact(contact)}
+                      onClick={() => {
+                        if (isSelectMode) {
+                          setSelectedChats((prev) =>
+                            prev.includes(contact.id)
+                              ? prev.filter((id) => id !== contact.id)
+                              : [...prev, contact.id],
+                          )
+                        } else {
+                          setSelectedContact(contact)
+                        }
+                      }}
                       className={cn(
                         'w-full flex items-center gap-3 p-2.5 rounded-lg text-left transition-all',
-                        isActive
+                        isActive && !isSelectMode
                           ? 'bg-violet-50 ring-1 ring-violet-100'
                           : 'hover:bg-zinc-50 ring-1 ring-transparent',
+                        isSelectMode && selectedChats.includes(contact.id) && 'bg-violet-50/50',
                       )}
                     >
+                      {/* Checkbox de seleção */}
+                      {isSelectMode && (
+                        <div className="shrink-0 text-violet-600">
+                          {selectedChats.includes(contact.id) ? (
+                            <CheckSquare className="h-5 w-5" />
+                          ) : (
+                            <Square className="h-5 w-5 text-zinc-300" />
+                          )}
+                        </div>
+                      )}
+
                       <span
                         className={cn(
                           'relative flex overflow-hidden rounded-full h-11 w-11 shrink-0 ring-2 transition-colors',
-                          isActive ? 'ring-violet-200' : 'ring-zinc-100',
+                          isActive && !isSelectMode ? 'ring-violet-200' : 'ring-zinc-100',
                         )}
                       >
                         <span
                           className={cn(
                             'flex h-full w-full items-center justify-center rounded-full text-[13px] font-semibold',
-                            isActive
+                            isActive && !isSelectMode
                               ? 'bg-gradient-to-br from-violet-100 to-violet-200 text-violet-700'
                               : 'bg-gradient-to-br from-zinc-100 to-zinc-200 text-zinc-600',
                           )}
@@ -784,7 +890,7 @@ export default function Inbox() {
                           <span
                             className={cn(
                               'text-[14px] font-semibold truncate flex-1 min-w-0 tracking-tight',
-                              isActive ? 'text-violet-900' : 'text-zinc-900',
+                              isActive && !isSelectMode ? 'text-violet-900' : 'text-zinc-900',
                             )}
                           >
                             {contact.name || contact.phone}
@@ -793,7 +899,7 @@ export default function Inbox() {
                             <span
                               className={cn(
                                 'text-[11px] shrink-0 whitespace-nowrap font-medium',
-                                isActive ? 'text-violet-600' : 'text-zinc-400',
+                                isActive && !isSelectMode ? 'text-violet-600' : 'text-zinc-400',
                               )}
                             >
                               {format(new Date(contact.last_message_at), 'HH:mm')}
@@ -803,7 +909,7 @@ export default function Inbox() {
                         <p
                           className={cn(
                             'text-[12.5px] truncate leading-snug',
-                            isActive ? 'text-violet-700/80' : 'text-zinc-500',
+                            isActive && !isSelectMode ? 'text-violet-700/80' : 'text-zinc-500',
                           )}
                         >
                           {contact.last_message || 'Nenhuma mensagem ainda'}
