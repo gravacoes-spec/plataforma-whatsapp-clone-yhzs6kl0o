@@ -69,7 +69,7 @@ export default function Inbox() {
   const [instance, setInstance] = useState<any>(null)
 
   // Estados para seleção e exclusão de conversas
-  const [isSelectMode, setIsSelectMode] = useState(false)
+  const [isSelectMode, setIsSelectMode] = useState<boolean>(false)
   const [selectedChats, setSelectedChats] = useState<string[]>([])
   const [isDeletingChats, setIsDeletingChats] = useState(false)
 
