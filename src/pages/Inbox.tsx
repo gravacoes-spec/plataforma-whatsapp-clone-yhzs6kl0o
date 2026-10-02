@@ -408,21 +408,20 @@ export default function Inbox() {
         // 1. Buscar todas as mensagens atreladas a esta conversa
         const msgs = await pb.collection('whatsapp_messages').getFullList({
           filter: `contact_id="${contactId}"`,
-          $autoCancel: false, // Necessário para evitar cancelamento de requisições simultâneas
+          $autoCancel: false,
         })
 
-        // 2. Apagar cada mensagem sequencialmente com retries e pequeno espaçamento para evitar HTTP 429
+        // 2. Apagar cada mensagem sequencialmente com um atraso MAIOR para evitar HTTP 429
         for (const msg of msgs) {
           await deleteMessageWithRetry(msg.id)
-          await sleep(25)
+          await sleep(200) // Aumentado de 25ms para 200ms (aprox. 5 requisições por segundo)
         }
 
-        // OBS: Se você quiser que o SISTEMA também apague o CONTATO (Lead/Usuário) da agenda
-        // do CRM logo após limpar as mensagens, basta descomentar a linha abaixo:
-        // await pb.collection('whatsapp_contacts').delete(contactId, { $autoCancel: false })
+        // 3. APAGAR O CONTATO: Exclui o lead/usuário da agenda e da tela do Inbox
+        await pb.collection('whatsapp_contacts').delete(contactId, { $autoCancel: false })
       }
 
-      toast({ title: 'Registros excluídos com sucesso!' })
+      toast({ title: 'Conversas e contatos excluídos com sucesso!' })
       setIsSelectMode(false)
 
       // Limpa a tela caso a conversa ativa tenha sido excluída
