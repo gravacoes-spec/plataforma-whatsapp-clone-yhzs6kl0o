@@ -1,12 +1,20 @@
 // Hook de notificação por e-mail para novos cadastros de leads via /cadastro
-onRecordCreate((e) => {
+onRecordAfterCreateRequest((e) => {
   try {
     var record = e.record
     var etapa = record.getString('etapa_pipeline')
 
-    // Disparar apenas se o registro vier do formulário público (/cadastro),
-    // identificado pela etapa inicial '1. Novo Lead'.
-    if (etapa !== '1. Novo Lead') {
+    // Captura a URL de origem (Referer) da requisição HTTP para verificar a tela
+    var referer = e.httpContext ? e.httpContext.request().referer() || '' : ''
+
+    // Verifica se a requisição foi feita por um usuário logado internamente no CRM
+    var authRecord = e.httpContext ? e.httpContext.get('authRecord') : null
+
+    // Disparar APENAS se TODAS as condições abaixo forem atendidas:
+    // 1. A etapa é '1. Novo Lead'
+    // 2. A requisição veio da URL que contém '/cadastro'
+    // 3. NÃO há usuário logado (garantindo que veio do formulário público anônimo)
+    if (etapa !== '1. Novo Lead' || !referer.includes('/cadastro') || authRecord) {
       return e.next()
     }
 
@@ -19,7 +27,7 @@ onRecordCreate((e) => {
     var senderName = $app.settings().meta.senderName || 'CRM Perícia Foco'
 
     var htmlBody =
-      '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #27272a; border: 1px solid #e4e4e7; rounded: 8px;">' +
+      '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #27272a; border: 1px solid #e4e4e7; border-radius: 8px;">' +
       '<h2 style="color: #18181b; margin-top: 0; border-bottom: 2px solid #f59e0b; padding-bottom: 8px;">Novo Lead Cadastrado via Site</h2>' +
       '<p style="font-size: 14px; color: #52525b;">Um novo formulário de consultoria de estudos (/cadastro) foi preenchido.</p>' +
       '<table style="width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 14px;">' +
