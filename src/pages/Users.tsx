@@ -123,7 +123,9 @@ export default function Users() {
           payload.passwordConfirm = formData.passwordConfirm
         }
         await updateUser(editingUser.id, payload)
-        toast.success('Usuário atualizado com sucesso')
+        toast.success('Usuário atualizado com sucesso', {
+          style: { background: '#3dcd1dff', color: 'white', border: 'none' },
+        })
       } else {
         // ADICIONADO: Garante que os novos usuários já nasçam com o e-mail visível
         const newUserData = {
@@ -131,12 +133,16 @@ export default function Users() {
           emailVisibility: true,
         }
         await createUser(newUserData)
-        toast.success('Usuário criado com sucesso')
+        toast.success('Usuário criado com sucesso', {
+          style: { background: '#3dcd1dff', color: 'white', border: 'none' },
+        })
       }
       setIsModalOpen(false)
     } catch (e) {
       const errors = extractFieldErrors(e)
-      toast.error(Object.values(errors)[0] || 'Erro ao salvar usuário')
+      toast.error(Object.values(errors)[0] || 'Erro ao salvar usuário', {
+        style: { background: '#ef4444', color: 'white', border: 'none' },
+      })
     }
   }
 
@@ -144,10 +150,14 @@ export default function Users() {
     if (confirm('Tem certeza que deseja excluir este usuário?')) {
       try {
         await deleteUser(id)
-        toast.success('Usuário excluído com sucesso')
+        toast.success('Usuário excluído com sucesso', {
+          style: { background: '#3dcd1dff', color: 'white', border: 'none' },
+        })
       } catch (e: any) {
         if (e?.status === 400) {
-          toast.error('Não é possível excluir pois existem registros vinculados.')
+          toast.error('Não é possível excluir pois existem registros vinculados.', {
+            style: { background: '#ef4444', color: 'white', border: 'none' },
+          })
         } else {
           toast.error(getErrorMessage(e))
         }
@@ -161,7 +171,9 @@ export default function Users() {
       // ALTERAR AQUI:
       toast.success('Status do mentor atualizado', { className: 'text-[#052136] font-medium' })
     } catch (e) {
-      toast.error('Erro ao atualizar status')
+      toast.error('Erro ao atualizar status', {
+        style: { background: '#ef4444', color: 'white', border: 'none' },
+      })
     }
   }
 
