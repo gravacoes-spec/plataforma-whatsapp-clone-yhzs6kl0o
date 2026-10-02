@@ -778,37 +778,84 @@ export default function Inbox() {
                 />
               </div>
               <Button
-                variant={isSelectMode ? 'secondary' : 'ghost'}
+                variant={isSelectMode ? 'secondary' : 'outline'}
                 size="sm"
-                className="h-9 px-2.5 text-xs font-medium shrink-0"
+                className={cn(
+                  'h-9 px-3 text-xs font-medium shrink-0 border-zinc-200 shadow-sm transition-all',
+                  isSelectMode
+                    ? 'bg-zinc-200 text-zinc-900 hover:bg-zinc-300 border-zinc-300'
+                    : 'bg-white text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900 border-zinc-300',
+                )}
                 onClick={() => {
                   setIsSelectMode(!isSelectMode)
                   setSelectedChats([])
                 }}
               >
+                <CheckSquare className="h-3.5 w-3.5 mr-1.5 text-zinc-500" />
                 {isSelectMode ? 'Cancelar' : 'Selecionar'}
               </Button>
             </div>
 
             {isSelectMode && (
-              <div className="flex items-center justify-between bg-zinc-50 p-2 rounded-lg border border-zinc-200/70">
-                <span className="text-xs font-medium text-zinc-600">
-                  {selectedChats.length} selecionada(s)
-                </span>
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  className="h-7 px-3 text-xs"
-                  disabled={selectedChats.length === 0 || isDeletingChats}
-                  onClick={handleDeleteSelectedChats}
-                >
-                  {isDeletingChats ? (
-                    <Loader2 className="h-3 w-3 animate-spin mr-1.5" />
-                  ) : (
-                    <Trash2 className="h-3 w-3 mr-1.5" />
+              <div className="flex items-center justify-between bg-zinc-50 p-2 rounded-lg border border-zinc-200/70 animate-in fade-in duration-200">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-medium text-zinc-600">
+                    {selectedChats.length} selecionada(s)
+                  </span>
+                  {filteredContacts.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (selectedChats.length === filteredContacts.length) {
+                          setSelectedChats([])
+                        } else {
+                          setSelectedChats(filteredContacts.map((c) => c.id))
+                        }
+                      }}
+                      className="text-[11px] text-violet-600 hover:underline font-medium ml-1"
+                    >
+                      {selectedChats.length === filteredContacts.length
+                        ? 'Desmarcar todos'
+                        : 'Selecionar todos'}
+                    </button>
                   )}
-                  Apagar Registros
-                </Button>
+                </div>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      className="h-7 px-3 text-xs font-medium shadow-sm"
+                      disabled={selectedChats.length === 0 || isDeletingChats}
+                    >
+                      {isDeletingChats ? (
+                        <Loader2 className="h-3 w-3 animate-spin mr-1.5" />
+                      ) : (
+                        <Trash2 className="h-3 w-3 mr-1.5" />
+                      )}
+                      Apagar Registros
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Apagar registros de mensagens?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Esta ação excluirá todas as mensagens das {selectedChats.length} conversa(s)
+                        selecionada(s) do banco de dados (whatsapp_messages). Os contatos serão
+                        mantidos. Essa ação não pode ser desfeita.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={handleDeleteSelectedChats}
+                        className="bg-red-600 hover:bg-red-700 text-white"
+                      >
+                        Sim, apagar registros
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </div>
             )}
           </div>
