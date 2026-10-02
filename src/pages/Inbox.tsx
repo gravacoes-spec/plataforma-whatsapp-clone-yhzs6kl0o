@@ -406,7 +406,13 @@ export default function Inbox() {
       }
       setSelectedChats([])
     } catch (err) {
-      console.error('Erro ao excluir registros:', err)
+      console.error(
+        'Erro ao excluir registros:',
+        {
+          style: { background: '#ef4444', color: 'white', border: 'none' },
+        },
+        err,
+      )
       toast({ variant: 'destructive', title: 'Erro ao excluir as conversas' })
     } finally {
       setIsDeletingChats(false)
