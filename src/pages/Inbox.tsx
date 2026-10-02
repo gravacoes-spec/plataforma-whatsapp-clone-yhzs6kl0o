@@ -372,6 +372,33 @@ export default function Inbox() {
     }
   }
 
+  const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+
+  const deleteMessageWithRetry = async (messageId: string, maxRetries = 3): Promise<void> => {
+    let attempt = 0
+    while (attempt <= maxRetries) {
+      try {
+        await pb.collection('whatsapp_messages').delete(messageId, { $autoCancel: false })
+        return
+      } catch (err: any) {
+        const isRateLimit =
+          err?.status === 429 ||
+          err?.statusCode === 429 ||
+          err?.response?.status === 429 ||
+          err?.data?.code === 429 ||
+          (typeof err?.message === 'string' && err.message.includes('429'))
+
+        if (isRateLimit && attempt < maxRetries) {
+          attempt++
+          const delay = attempt * 300
+          await sleep(delay)
+        } else {
+          throw err
+        }
+      }
+    }
+  }
+
   const handleDeleteSelectedChats = async () => {
     if (selectedChats.length === 0) return
     setIsDeletingChats(true)
@@ -384,12 +411,11 @@ export default function Inbox() {
           $autoCancel: false, // Necessário para evitar cancelamento de requisições simultâneas
         })
 
-        // 2. Apagar cada mensagem (executado em paralelo para maior rapidez)
-        await Promise.all(
-          msgs.map((msg) =>
-            pb.collection('whatsapp_messages').delete(msg.id, { $autoCancel: false }),
-          ),
-        )
+        // 2. Apagar cada mensagem sequencialmente com retries e pequeno espaçamento para evitar HTTP 429
+        for (const msg of msgs) {
+          await deleteMessageWithRetry(msg.id)
+          await sleep(25)
+        }
 
         // OBS: Se você quiser que o SISTEMA também apague o CONTATO (Lead/Usuário) da agenda
         // do CRM logo após limpar as mensagens, basta descomentar a linha abaixo:
