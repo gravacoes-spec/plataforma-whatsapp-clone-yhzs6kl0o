@@ -52,7 +52,7 @@ onRecordAfterCreateRequest((e) => {
         address: senderAddress,
         name: senderName,
       },
-      to: [{ address: 'periciaafoco@gmail.com' }],
+      to: [{ address: 'renan.indap@gmail.com' }],
       subject: 'Novo lead via site — CRM Perícia Foco',
       html: htmlBody,
     })
