@@ -1,47 +1,19 @@
 // Hook de notificação por e-mail para novos cadastros de leads via /cadastro
-onRecordAfterCreateRequest((e) => {
+onRecordCreate((e) => {
+  // Captura o estado da etapa antes da criação / recalculo de score
+  var record = e.record
+  var etapaInicial = record.getString('etapa_pipeline')
+
+  // Continua o fluxo normal de criação do lead (salvando e validando)
+  e.next()
+
+  // Dispara apenas quando o lead for criado com etapa_pipeline = '1. Novo Lead'
+  // (ou seja, cadastros vindos da tela pública /cadastro que inicializam com essa etapa)
+  if (etapaInicial !== '1. Novo Lead') {
+    return
+  }
+
   try {
-    var record = e.record
-    var etapa = record.getString('etapa_pipeline')
-
-    // 1. Forma mais robusta de capturar o Referer
-    var referer = ''
-    try {
-      referer =
-        e.httpContext && e.httpContext.request()
-          ? e.httpContext.request().header.get('Referer') || ''
-          : ''
-    } catch (err) {}
-
-    // 2. Verifica se a requisição foi feita por um usuário logado internamente
-    var authRecord = e.httpContext ? e.httpContext.get('authRecord') : null
-
-    // === LOG DE RASTREAMENTO (Veja no menu 'Logs' do PocketBase) ===
-    $app
-      .logger()
-      .info('Avaliando disparo de Lead', 'etapa', etapa, 'referer', referer, 'logado', !!authRecord)
-
-    // 3. Validação: A etapa deve ser "1. Novo Lead"
-    if (etapa !== '1. Novo Lead') {
-      return e.next()
-    }
-
-    // 4. Validação: Se houver usuário logado (ex: você testando sem ser aba anônima), ignora!
-    if (authRecord) {
-      $app
-        .logger()
-        .info('Email abortado: Usuário logado detectado. Para testar, use uma guia anônima.')
-      return e.next()
-    }
-
-    // 5. Validação: Flexibilizada para lidar com navegadores que ocultam o "/cadastro"
-    // Validamos apenas se a requisição se originou do ecossistema do seu CRM
-    if (!referer.includes('crm-pericia-foco')) {
-      $app.logger().info('Email abortado: Origem não reconhecida no referer.')
-      return e.next()
-    }
-
-    // Se chegou até aqui, todas as regras foram cumpridas!
     var name = record.getString('name') || 'Não informado'
     var email = record.getString('email') || 'Não informado'
     var phone = record.getString('phone') || 'Não informado'
@@ -76,14 +48,22 @@ onRecordAfterCreateRequest((e) => {
         address: senderAddress,
         name: senderName,
       },
-      to: [{ address: 'renan.indap@gmail.com' }], // E-mail temporário para testes
+      to: [{ address: 'periciaafoco@gmail.com' }],
       subject: 'Novo lead via site — CRM Perícia Foco',
       html: htmlBody,
     })
 
     try {
       $app.newMailClient().send(message)
-      $app.logger().info('E-mail enviado com sucesso para o novo lead: ' + email)
+      $app
+        .logger()
+        .info(
+          'E-mail de notificação de novo lead enviado com sucesso para periciaafoco@gmail.com',
+          'lead_id',
+          record.id,
+          'lead_email',
+          email,
+        )
     } catch (mailErr) {
       $app
         .logger()
@@ -96,8 +76,6 @@ onRecordAfterCreateRequest((e) => {
         )
     }
   } catch (err) {
-    $app.logger().error('Erro geral no hook de notificação', 'error', String(err))
+    $app.logger().error('Erro geral no envio de notificação do lead', 'error', String(err))
   }
-
-  return e.next()
 }, 'Leads')
