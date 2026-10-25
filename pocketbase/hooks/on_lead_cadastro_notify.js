@@ -4,20 +4,44 @@ onRecordAfterCreateRequest((e) => {
     var record = e.record
     var etapa = record.getString('etapa_pipeline')
 
-    // Captura a URL de origem (Referer) da requisição HTTP para verificar a tela
-    var referer = e.httpContext ? e.httpContext.request().referer() || '' : ''
+    // 1. Forma mais robusta de capturar o Referer
+    var referer = ''
+    try {
+      referer =
+        e.httpContext && e.httpContext.request()
+          ? e.httpContext.request().header.get('Referer') || ''
+          : ''
+    } catch (err) {}
 
-    // Verifica se a requisição foi feita por um usuário logado internamente no CRM
+    // 2. Verifica se a requisição foi feita por um usuário logado internamente
     var authRecord = e.httpContext ? e.httpContext.get('authRecord') : null
 
-    // Disparar APENAS se TODAS as condições abaixo forem atendidas:
-    // 1. A etapa é '1. Novo Lead'
-    // 2. A requisição veio da URL que contém '/cadastro'
-    // 3. NÃO há usuário logado (garantindo que veio do formulário público anônimo)
-    if (etapa !== '1. Novo Lead' || !referer.includes('/cadastro') || authRecord) {
+    // === LOG DE RASTREAMENTO (Veja no menu 'Logs' do PocketBase) ===
+    $app
+      .logger()
+      .info('Avaliando disparo de Lead', 'etapa', etapa, 'referer', referer, 'logado', !!authRecord)
+
+    // 3. Validação: A etapa deve ser "1. Novo Lead"
+    if (etapa !== '1. Novo Lead') {
       return e.next()
     }
 
+    // 4. Validação: Se houver usuário logado (ex: você testando sem ser aba anônima), ignora!
+    if (authRecord) {
+      $app
+        .logger()
+        .info('Email abortado: Usuário logado detectado. Para testar, use uma guia anônima.')
+      return e.next()
+    }
+
+    // 5. Validação: Flexibilizada para lidar com navegadores que ocultam o "/cadastro"
+    // Validamos apenas se a requisição se originou do ecossistema do seu CRM
+    if (!referer.includes('crm-pericia-foco')) {
+      $app.logger().info('Email abortado: Origem não reconhecida no referer.')
+      return e.next()
+    }
+
+    // Se chegou até aqui, todas as regras foram cumpridas!
     var name = record.getString('name') || 'Não informado'
     var email = record.getString('email') || 'Não informado'
     var phone = record.getString('phone') || 'Não informado'
@@ -52,18 +76,19 @@ onRecordAfterCreateRequest((e) => {
         address: senderAddress,
         name: senderName,
       },
-      to: [{ address: 'renan.indap@gmail.com' }],
+      to: [{ address: 'renan.indap@gmail.com' }], // E-mail temporário para testes
       subject: 'Novo lead via site — CRM Perícia Foco',
       html: htmlBody,
     })
 
     try {
       $app.newMailClient().send(message)
+      $app.logger().info('E-mail enviado com sucesso para o novo lead: ' + email)
     } catch (mailErr) {
       $app
         .logger()
         .error(
-          'on_lead_cadastro_notify: falha ao enviar e-mail de aviso do lead',
+          'Falha ao enviar e-mail de aviso do lead',
           'lead_id',
           record.id,
           'error',
@@ -71,9 +96,7 @@ onRecordAfterCreateRequest((e) => {
         )
     }
   } catch (err) {
-    $app
-      .logger()
-      .error('on_lead_cadastro_notify: erro geral no hook de notificação', 'error', String(err))
+    $app.logger().error('Erro geral no hook de notificação', 'error', String(err))
   }
 
   return e.next()
