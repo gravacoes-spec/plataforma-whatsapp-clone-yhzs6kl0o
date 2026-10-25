@@ -8,9 +8,10 @@ onRecordCreate((e) => {
   // Continua o fluxo normal de criação do lead (salvando e validando)
   e.next()
 
-  // Dispara apenas quando o lead for criado com etapa_pipeline = '1. Novo Lead'
-  // (ou seja, cadastros vindos da tela pública /cadastro que inicializam com essa etapa)
-  if (etapaInicial !== '1. Novo Lead') {
+  // Dispara apenas quando o lead for criado com origem = 'site' e etapa_pipeline = '1. Novo Lead'
+  // (ou seja, formulário público /cadastro). Leads de WhatsApp ou manuais têm origem diferente/vazia.
+  var origem = record.getString('origem')
+  if (origem !== 'site' || etapaInicial !== '1. Novo Lead') {
     return
   }
 

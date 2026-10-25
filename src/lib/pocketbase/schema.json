@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-25T19:40:04.893Z",
+  "generatedAt": "2026-10-25T19:59:34.168Z",
   "collections": [
     {
       "name": "users",
@@ -597,6 +597,12 @@
           "required": false,
           "system": false,
           "selectValues": ["Até R$ 500", "R$ 500-1000", "+ R$ 1000"]
+        },
+        {
+          "name": "origem",
+          "type": "text",
+          "required": false,
+          "system": false
         }
       ],
       "indexes": [

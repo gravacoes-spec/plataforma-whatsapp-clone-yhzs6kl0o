@@ -81,6 +81,7 @@ export default function Cadastro() {
     try {
       await pb.collection('Leads').create({
         ...values,
+        origem: 'site',
         etapa_pipeline: '1. Novo Lead',
       })
       setIsSuccess(true)
