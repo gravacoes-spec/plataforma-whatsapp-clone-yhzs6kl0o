@@ -1,4 +1,5 @@
 // Hook de notificação por e-mail para novos cadastros de leads via /cadastro
+// Notifica periciaafoco@gmail.com quando um lead é criado na etapa '1. Novo Lead'
 onRecordCreate((e) => {
   // Captura o estado da etapa antes da criação / recalculo de score
   var record = e.record
