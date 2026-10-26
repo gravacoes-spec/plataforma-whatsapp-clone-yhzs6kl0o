@@ -1,17 +1,15 @@
 // Hook de notificação por e-mail para novos cadastros de leads via /cadastro
-// Notifica periciaafoco@gmail.com quando um lead é criado na etapa '1. Novo Lead'
+// Notifica periciaafoco@gmail.com quando um lead é criado com origem = 'site'
 onRecordCreate((e) => {
-  // Captura o estado da etapa antes da criação / recalculo de score
   var record = e.record
-  var etapaInicial = record.getString('etapa_pipeline')
 
   // Continua o fluxo normal de criação do lead (salvando e validando)
   e.next()
 
-  // Dispara apenas quando o lead for criado com origem = 'site' e etapa_pipeline = '1. Novo Lead'
+  // Dispara apenas quando o lead for criado com origem = 'site'
   // (ou seja, formulário público /cadastro). Leads de WhatsApp ou manuais têm origem diferente/vazia.
   var origem = record.getString('origem')
-  if (origem !== 'site' || etapaInicial !== '1. Novo Lead') {
+  if (origem !== 'site') {
     return
   }
 
