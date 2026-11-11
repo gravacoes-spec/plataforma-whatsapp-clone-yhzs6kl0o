@@ -10,6 +10,10 @@ import {
 } from '@/services/whatsapp'
 import { useRealtime } from '@/hooks/use-realtime'
 import { cn } from '@/lib/utils'
+import { normalizeBrPhone } from '@/lib/phone'
+import { findContactByJid, findContactByPhone, createContactForPhone } from '@/services/novo-chat'
+import { NovoChatDialog } from '@/components/inbox/NovoChatDialog'
+import type { LeadRecord } from '@/services/leads'
 import { format } from 'date-fns'
 import {
   Search,
@@ -30,6 +34,7 @@ import {
   Bot,
   BotOff,
   CheckSquare,
+  Plus,
 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -72,6 +77,9 @@ export default function Inbox() {
   const [isSelectMode, setIsSelectMode] = useState<boolean>(false)
   const [selectedChats, setSelectedChats] = useState<string[]>([])
   const [isDeletingChats, setIsDeletingChats] = useState(false)
+
+  // Novo Chat (iniciar conversa a partir de um lead)
+  const [novoChatOpen, setNovoChatOpen] = useState(false)
 
   // File states
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
@@ -550,6 +558,41 @@ export default function Inbox() {
     }
   }
 
+  const handleStartNovoChat = async (lead: LeadRecord) => {
+    const normalized = normalizeBrPhone(lead.phone)
+    if (!normalized) {
+      toast({ variant: 'destructive', title: 'Lead sem telefone válido' })
+      return
+    }
+    if (!instance?.id) {
+      toast({
+        variant: 'destructive',
+        title: 'WhatsApp não conectado',
+        description: 'Conecte o WhatsApp antes de iniciar uma conversa.',
+      })
+      return
+    }
+
+    try {
+      let contact = findContactByPhone(contacts, normalized) || (await findContactByJid(normalized))
+
+      if (!contact) {
+        contact = await createContactForPhone({
+          normalizedPhone: normalized,
+          name: lead.name || '',
+          instanceId: instance.id,
+        })
+      }
+
+      setContacts((prev) => (prev.some((c) => c.id === contact.id) ? prev : [contact, ...prev]))
+      setSelectedContact(contact)
+      setNovoChatOpen(false)
+    } catch (err) {
+      console.error('Erro ao iniciar novo chat:', err)
+      toast({ variant: 'destructive', title: 'Erro ao iniciar a conversa' })
+    }
+  }
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
@@ -809,6 +852,14 @@ export default function Inbox() {
                 />
               </div>
               <Button
+                size="sm"
+                onClick={() => setNovoChatOpen(true)}
+                className="h-9 px-3 text-xs font-medium bg-violet-600 hover:bg-violet-700 text-white shadow-sm shadow-violet-600/20 shrink-0"
+              >
+                <Plus className="h-3.5 w-3.5 mr-1" />
+                Novo Chat
+              </Button>
+              <Button
                 variant={isSelectMode ? 'secondary' : 'outline'}
                 size="sm"
                 className={cn(
@@ -1001,6 +1052,12 @@ export default function Inbox() {
           )}
         </ScrollArea>
       </div>
+
+      <NovoChatDialog
+        open={novoChatOpen}
+        onOpenChange={setNovoChatOpen}
+        onSelectLead={handleStartNovoChat}
+      />
 
       {/* Chat Area */}
       <div
