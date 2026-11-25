@@ -53,6 +53,7 @@ export default function Users() {
     email: '',
     password: '',
     passwordConfirm: '',
+    oldPassword: '',
     perfil_acess: 'Vendedor',
   })
 
@@ -95,6 +96,7 @@ export default function Users() {
         email: userToEdit.email || '',
         password: '',
         passwordConfirm: '',
+        oldPassword: '',
         perfil_acess: userToEdit.perfil_acess || 'Vendedor',
       })
     } else {
@@ -103,6 +105,7 @@ export default function Users() {
         email: '',
         password: '',
         passwordConfirm: '',
+        oldPassword: '',
         perfil_acess: 'Vendedor',
       })
     }
@@ -119,8 +122,25 @@ export default function Users() {
           emailVisibility: true, // <--- ADICIONADO: Força o email a ficar visível
         }
         if (formData.password) {
+          if (formData.password.length < 8) {
+            toast.error('A senha deve ter no mínimo 8 caracteres.', {
+              style: { background: '#ef4444', color: 'white', border: 'none' },
+            })
+            return
+          }
+          if (formData.password !== formData.passwordConfirm) {
+            toast.error('As senhas não coincidem.', {
+              style: { background: '#ef4444', color: 'white', border: 'none' },
+            })
+            return
+          }
           payload.password = formData.password
           payload.passwordConfirm = formData.passwordConfirm
+          // Em uma coleção de auth sem regra "Manage" configurada, o PocketBase
+          // exige a senha atual (oldPassword) do usuário editado para trocar a senha.
+          if (formData.oldPassword) {
+            payload.oldPassword = formData.oldPassword
+          }
         }
         await updateUser(editingUser.id, payload)
         toast.success('Usuário atualizado com sucesso', {
@@ -128,11 +148,12 @@ export default function Users() {
         })
       } else {
         // ADICIONADO: Garante que os novos usuários já nasçam com o e-mail visível
-        const newUserData = {
-          ...formData,
+        const { oldPassword: _ignored, ...newUserData } = formData
+        void _ignored
+        await createUser({
+          ...newUserData,
           emailVisibility: true,
-        }
-        await createUser(newUserData)
+        })
         toast.success('Usuário criado com sucesso', {
           style: { background: '#3dcd1dff', color: 'white', border: 'none' },
         })
@@ -373,6 +394,7 @@ export default function Users() {
               <Label>Senha {editingUser && '(Deixe em branco para manter)'}</Label>
               <Input
                 type="password"
+                autoComplete="new-password"
                 value={formData.password}
                 onChange={(e) =>
                   setFormData({
@@ -382,6 +404,21 @@ export default function Users() {
                   })
                 }
               />
+              {editingUser && formData.password.length > 0 && (
+                <div className="space-y-2 pt-2">
+                  <Label>
+                    {editingUser.id === user?.id
+                      ? 'Sua senha atual (obrigatória para trocar a senha)'
+                      : 'Senha atual do usuário (obrigatória para trocar a senha)'}
+                  </Label>
+                  <Input
+                    type="password"
+                    autoComplete={editingUser.id === user?.id ? 'current-password' : 'off'}
+                    value={formData.oldPassword}
+                    onChange={(e) => setFormData({ ...formData, oldPassword: e.target.value })}
+                  />
+                </div>
+              )}
             </div>
           </div>
           <DialogFooter>
